@@ -39,11 +39,11 @@ func NewContext() context.Context {
 	ctx = context.WithValue(ctx, sns.AwsSnsFactory, snsClientFactory)
 
 	enableObjectStore := os.Getenv("CVX_ENABLE_OBJECT_STORE") == "1"
-	eventStoreTable := os.Getenv("CVX_EVENT_STORE")
-	stateStoreTable := os.Getenv("CVX_STATE_STORE")
-	eventBusTopic := os.Getenv("CVX_EVENT_BUS")
-	objectStoreBucket := os.Getenv("CVX_OBJECT_STORE")
-	graphqlGatewayUrl := os.Getenv("CVX_GRAPHQL_GATEWAY")
+	eventStoreTable := os.Getenv("CVX_EVENT_STORE_NAME")
+	stateStoreTable := os.Getenv("CVX_STATE_STORE_NAME")
+	eventBusTopic := os.Getenv("CVX_EVENT_BUS_ARN")
+	objectStoreBucket := os.Getenv("CVX_OBJECT_STORE_NAME")
+	graphqlGatewayUrl := os.Getenv("CVX_GRAPHQL_API_URL")
 
 	awsObjectStore := s3.NewObjectStore(region, objectStoreBucket, s3ClientFactory)
 	awsEventStore := dynamo.NewEventStore(region, eventStoreTable, dynamoClientFactory)
