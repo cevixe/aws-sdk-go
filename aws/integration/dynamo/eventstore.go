@@ -17,18 +17,18 @@ type eventStoreImpl struct {
 	clientFactory    ClientFactory
 }
 
-func (r eventStoreImpl) GetLatestEvent(ctx context.Context, source string) *model.EventObject {
+func (r eventStoreImpl) GetLatestEvent(ctx context.Context, sourceKey string) *model.EventObject {
 
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(r.eventStoreTable),
 		Limit:                  aws.Int64(1),
 		ScanIndexForward:       aws.Bool(false),
-		KeyConditionExpression: aws.String("#source = :source"),
+		KeyConditionExpression: aws.String("#source_key = :source_key"),
 		ExpressionAttributeNames: map[string]*string{
-			"#source": aws.String("source"),
+			"#source_key": aws.String("source_key"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":source": {S: aws.String(source)},
+			":source_key": {S: aws.String(sourceKey)},
 		},
 	}
 
@@ -36,7 +36,7 @@ func (r eventStoreImpl) GetLatestEvent(ctx context.Context, source string) *mode
 	output, err := client.QueryWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot get latest event from dynamodb(Source:%s)\n%v", source, err))
+		panic(fmt.Errorf("cannot get latest event from dynamodb(%s)\n%v", sourceKey, err))
 	}
 
 	if len(output.Items) == 0 {
@@ -48,13 +48,13 @@ func (r eventStoreImpl) GetLatestEvent(ctx context.Context, source string) *mode
 	return event
 }
 
-func (r eventStoreImpl) GetEvent(ctx context.Context, source string, id uint64) *model.EventObject {
+func (r eventStoreImpl) GetEvent(ctx context.Context, sourceKey string, id uint64) *model.EventObject {
 
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(r.eventStoreTable),
 		Key: map[string]*dynamodb.AttributeValue{
-			"source": {S: aws.String(source)},
-			"id":     {N: aws.String(strconv.FormatUint(id, 10))},
+			"source_key": {S: aws.String(sourceKey)},
+			"event_id":   {N: aws.String(strconv.FormatUint(id, 10))},
 		},
 	}
 
@@ -62,7 +62,7 @@ func (r eventStoreImpl) GetEvent(ctx context.Context, source string, id uint64) 
 	output, err := client.GetItemWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot get event from dynamodb(Source:%s, ID:%d)\n%v", source, id, err))
+		panic(fmt.Errorf("cannot get event from dynamodb(%s/%d)\n%v", sourceKey, id, err))
 	}
 
 	if output.Item == nil {
