@@ -2,7 +2,6 @@ package impl
 
 import (
 	"context"
-	"fmt"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/aws-sdk-go/util"
 	"github.com/cevixe/core-sdk-go/cevixe"
@@ -53,7 +52,7 @@ func (f eventFactoryImpl) newFirstEvent(
 	entityState := &map[string]interface{}{}
 	entityStateJson := util.MarshalJsonString(state)
 	util.UnmarshalJsonString(entityStateJson, entityState)
-	entityType := getTypeName(state)
+	entityType := util.GetTypeName(state)
 
 	eventObject := &model.EventObject{
 		SourceID:      entityID,
@@ -86,7 +85,7 @@ func (f eventFactoryImpl) newEvent(
 	eventPayload := &map[string]interface{}{}
 	eventPayloadJson := util.MarshalJsonString(payload)
 	util.UnmarshalJsonString(eventPayloadJson, eventPayload)
-	eventType := getTypeName(payload)
+	eventType := util.GetTypeName(payload)
 
 	entityTime := entity.Time().UnixNano() / int64(time.Millisecond)
 	entityState := &map[string]interface{}{}
@@ -110,13 +109,4 @@ func (f eventFactoryImpl) newEvent(
 	}
 
 	return NewEvent(ctx, eventObject)
-}
-
-func getTypeName(object interface{}) string {
-	rv := reflect.ValueOf(object)
-	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
-		fmt.Println(rv.Kind(), rv.Type(), rv)
-		rv = rv.Elem()
-	}
-	return rv.Type().Name()
 }
