@@ -43,13 +43,19 @@ func (f eventFactoryImpl) newFirstEvent(
 	eventPayload := &map[string]interface{}{}
 	eventPayloadJson := util.MarshalJsonString(payload)
 	util.UnmarshalJsonString(eventPayloadJson, eventPayload)
+	eventType := reflect.TypeOf(payload).Name()
+	if eventType == "" {
+		eventType = reflect.ValueOf(payload).Type().Name()
+	}
 
+	entityID := uuid.New().String()
 	entityState := &map[string]interface{}{}
 	entityStateJson := util.MarshalJsonString(state)
 	util.UnmarshalJsonString(entityStateJson, entityState)
-
 	entityType := reflect.TypeOf(state).Name()
-	entityID := uuid.New().String()
+	if entityType == "" {
+		entityType = reflect.ValueOf(state).Type().Name()
+	}
 
 	eventObject := &model.EventObject{
 		SourceID:      entityID,
@@ -58,7 +64,7 @@ func (f eventFactoryImpl) newFirstEvent(
 		SourceOwner:   trigger.Author(),
 		SourceState:   entityState,
 		EventID:       1,
-		EventType:     reflect.TypeOf(payload).Name(),
+		EventType:     eventType,
 		EventTime:     eventTime,
 		EventAuthor:   trigger.Author(),
 		EventPayload:  eventPayload,
@@ -82,6 +88,10 @@ func (f eventFactoryImpl) newEvent(
 	eventPayload := &map[string]interface{}{}
 	eventPayloadJson := util.MarshalJsonString(payload)
 	util.UnmarshalJsonString(eventPayloadJson, eventPayload)
+	eventType := reflect.TypeOf(payload).Name()
+	if eventType == "" {
+		eventType = reflect.ValueOf(payload).Type().Name()
+	}
 
 	entityTime := entity.Time().UnixNano() / int64(time.Millisecond)
 	entityState := &map[string]interface{}{}
@@ -95,7 +105,7 @@ func (f eventFactoryImpl) newEvent(
 		SourceOwner:   entity.Owner(),
 		SourceState:   entityState,
 		EventID:       entity.Version() + 1,
-		EventType:     reflect.TypeOf(payload).Name(),
+		EventType:     eventType,
 		EventTime:     eventTime,
 		EventAuthor:   trigger.Author(),
 		EventPayload:  eventPayload,
