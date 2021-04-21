@@ -7,7 +7,6 @@ import (
 	"github.com/cevixe/core-sdk-go/cevixe"
 	"github.com/cevixe/core-sdk-go/core"
 	"github.com/google/uuid"
-	"reflect"
 	"time"
 )
 
@@ -43,10 +42,7 @@ func (f eventFactoryImpl) newFirstEvent(
 	eventPayload := &map[string]interface{}{}
 	eventPayloadJson := util.MarshalJsonString(payload)
 	util.UnmarshalJsonString(eventPayloadJson, eventPayload)
-	eventType := reflect.TypeOf(payload).Name()
-	if eventType == "" {
-		eventType = reflect.ValueOf(payload).Type().Name()
-	}
+	eventType := util.GetTypeName(payload)
 
 	entityID := uuid.New().String()
 	entityState := &map[string]interface{}{}
