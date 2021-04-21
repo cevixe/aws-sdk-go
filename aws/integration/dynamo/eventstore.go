@@ -7,8 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/util"
-	"log"
 	"strconv"
 )
 
@@ -79,18 +77,15 @@ func (r eventStoreImpl) GetEvent(ctx context.Context, source string, id uint64) 
 func (r eventStoreImpl) SaveEvent(ctx context.Context, event *model.EventObject) {
 
 	input := &dynamodb.PutItemInput{
-		TableName:              aws.String(r.eventStoreTable),
-		Item:                   toDynamoItem(event),
-		ReturnConsumedCapacity: aws.String("TOTAL"),
+		TableName: aws.String(r.eventStoreTable),
+		Item:      toDynamoItem(event),
 	}
 
 	client := r.clientFactory.GetClient(r.eventStoreRegion)
-	output, err := client.PutItemWithContext(ctx, input)
+	_, err := client.PutItemWithContext(ctx, input)
 
 	if err != nil {
 		panic(fmt.Errorf("cannot put event to dynamodb(/%s/%s/%d)\n%v", event.SourceType, event.SourceID, event.EventID, err))
-	} else {
-		log.Printf("ConsumedCapacity:\n%s", util.MarshalJsonString(output.ConsumedCapacity))
 	}
 }
 

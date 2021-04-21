@@ -23,7 +23,10 @@ func (h decoratorImpl) Handle(ctx context.Context, event events.SQSEvent) (err e
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("An unexpected error has occurred.\n%s\n", string(debug.Stack()))
+			fmt.Println("An unexpected error has occurred: ", r)
+			fmt.Println("Stack trace:")
+			debug.PrintStack()
+			err = fmt.Errorf("An unexpected error has occurred: \n%v\n", r)
 		}
 	}()
 
