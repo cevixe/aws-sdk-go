@@ -4,46 +4,38 @@ import (
 	"context"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/core-sdk-go/core"
-	"strconv"
 )
 
 type eventStoreImpl struct {
-	core.EventStore
-	enableObjectStore bool
-	eventStore        model.EventStore
-	objectStore       model.ObjectStore
+	eventStore  model.AwsEventStore
+	objectStore model.AwsObjectStore
 }
 
-func NewEventStore(eventStore model.EventStore, objectStore model.ObjectStore, enableObjectStore bool) core.EventStore {
+func NewEventStore(eventStore model.AwsEventStore, objectStore model.AwsObjectStore) core.EventStore {
 	return &eventStoreImpl{
-		eventStore:        eventStore,
-		objectStore:       objectStore,
-		enableObjectStore: enableObjectStore,
+		eventStore:  eventStore,
+		objectStore: objectStore,
 	}
 }
 
-func (e eventStoreImpl) GetEvent(ctx context.Context, source string, id *uint64) core.Event {
-	if id == nil {
-		eventValue := e.eventStore.GetLatestEvent(ctx, source)
-		return NewEvent(ctx, eventValue)
-	} else {
-		eventValue := e.eventStore.GetEventById(ctx, source, *id)
-		return NewEvent(ctx, eventValue)
+func (e eventStoreImpl) GetLastEvent(ctx context.Context, source string) core.Event {
+	eventValue := e.eventStore.GetLastEventRecord(ctx, source)
+	if eventValue == nil {
+		return nil
 	}
+	if eventValue.Reference != nil && eventValue.EventData == nil {
+		e.objectStore.GetObject(ctx, eventValue.Reference, eventValue)
+	}
+	return NewEvent(ctx, eventValue)
 }
 
-func (e eventStoreImpl) SaveEvent(ctx context.Context, event core.Event) {
-	eventObject := event.(*eventImpl).value
-
-	if e.enableObjectStore {
-		eventObject.SourceState = nil
-		eventObject.EventPayload = nil
-		key := generateEventKey(event.Source().Type(), event.Source().ID(), event.ID())
-		eventObject.Reference = e.objectStore.SaveObject(ctx, key, eventObject)
+func (e eventStoreImpl) GetEventByID(ctx context.Context, source string, id string) core.Event {
+	eventValue := e.eventStore.GetEventRecordByID(ctx, source, id)
+	if eventValue == nil {
+		return nil
 	}
-	e.eventStore.SaveEvent(ctx, eventObject)
-}
-
-func generateEventKey(sourceType string, sourceId string, id uint64) string {
-	return sourceType + "/" + sourceId + "/" + strconv.FormatUint(id, 10)
+	if eventValue.Reference != nil && eventValue.EventData == nil {
+		e.objectStore.GetObject(ctx, eventValue.Reference, eventValue)
+	}
+	return NewEvent(ctx, eventValue)
 }

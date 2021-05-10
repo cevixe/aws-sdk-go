@@ -3,66 +3,67 @@ package impl
 import (
 	"context"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/util"
+	"github.com/cevixe/aws-sdk-go/aws/util"
 	"github.com/cevixe/core-sdk-go/core"
 	"time"
 )
 
-type eventImpl struct {
-	core.Event
-	ctx   context.Context
-	value *model.EventObject
+type EventImpl struct {
+	Ctx    context.Context
+	Record *model.AwsEventRecord
 }
 
-func NewEvent(
-	ctx context.Context,
-	eventObjectValue *model.EventObject) core.Event {
-	return &eventImpl{
-		ctx:   ctx,
-		value: eventObjectValue,
+func NewEvent(ctx context.Context, record *model.AwsEventRecord) core.Event {
+	return &EventImpl{
+		Ctx:    ctx,
+		Record: record,
 	}
 }
 
-func (e *eventImpl) ID() uint64 {
-	return e.value.EventID
+func (e EventImpl) ID() string {
+	return *e.Record.EventID
 }
 
-func (e *eventImpl) Type() string {
-	return e.value.EventType
+func (e EventImpl) Source() string {
+	return *e.Record.EventSource
 }
 
-func (e *eventImpl) Time() time.Time {
-	nanoseconds := e.value.EventTime * int64(time.Millisecond)
+func (e EventImpl) Class() core.EventClass {
+	return core.EventClass(*e.Record.EventClass)
+}
+
+func (e EventImpl) Type() string {
+	return *e.Record.EventType
+}
+
+func (e EventImpl) Time() time.Time {
+	nanoseconds := *e.Record.EventTime * int64(time.Millisecond)
 	return time.Unix(0, nanoseconds)
 }
 
-func (e *eventImpl) Author() string {
-	return e.value.EventAuthor
+func (e EventImpl) Author() string {
+	return *e.Record.EventAuthor
 }
 
-func (e *eventImpl) Payload(v interface{}) {
-	if e.value.EventPayload == nil && e.value.Reference != nil {
-		awsContext := e.ctx.Value(model.AwsContext).(*model.Context)
-		newValue := &model.EventObject{}
-		awsContext.AwsObjectStore.GetObject(e.ctx, e.value.Reference, newValue)
-		e.value = newValue
-	}
-	json := util.MarshalJsonString(e.value.EventPayload)
+func (e EventImpl) Data(v interface{}) {
+	json := util.MarshalJsonString(e.Record.EventData)
 	util.UnmarshalJsonString(json, v)
 }
 
-func (e *eventImpl) Source() core.Entity {
-	return &entityImpl{
-		ctx:       e.ctx,
-		lastEvent: e.value}
+func (e EventImpl) Entity() core.Entity {
+	if core.EventClass(*e.Record.EventClass) == core.CommandEvent ||
+		core.EventClass(*e.Record.EventClass) == core.BusinessEvent {
+		return nil
+	}
+	return &EntityImpl{LastEvent: e.Record}
 }
 
-func (e *eventImpl) Transaction() string {
-	return e.value.Transaction
+func (e EventImpl) Transaction() string {
+	return *e.Record.Transaction
 }
 
-func (e *eventImpl) Trigger() core.Event {
-	awsContext := e.ctx.Value(model.AwsContext).(model.Context)
-	triggerValue := awsContext.AwsEventStore.GetEventById(e.ctx, e.value.TriggerSource, e.value.TriggerID)
-	return NewEvent(e.ctx, triggerValue)
+func (e EventImpl) Trigger() core.Event {
+	awsContext := e.Ctx.Value(AwsContext).(*Context)
+	triggerValue := awsContext.AwsEventStore.GetEventRecordByID(e.Ctx, *e.Record.TriggerSource, *e.Record.TriggerID)
+	return NewEvent(e.Ctx, triggerValue)
 }

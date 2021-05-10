@@ -1,53 +1,52 @@
 package impl
 
 import (
-	"context"
+	"fmt"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/util"
-	"github.com/cevixe/core-sdk-go/core"
+	"github.com/cevixe/aws-sdk-go/aws/util"
+	"strconv"
 	"time"
 )
 
-type entityImpl struct {
-	core.Entity
-	ctx       context.Context
-	lastEvent *model.EventObject
+type EntityImpl struct {
+	LastEvent *model.AwsEventRecord
 }
 
-func (e *entityImpl) ID() string {
-	return e.lastEvent.SourceID
+func (e EntityImpl) ID() string {
+	return *e.LastEvent.EntityID
 }
 
-func (e *entityImpl) Type() string {
-	return e.lastEvent.SourceType
+func (e EntityImpl) Type() string {
+	return *e.LastEvent.EntityType
 }
 
-func (e *entityImpl) Time() time.Time {
-	nanoseconds := e.lastEvent.SourceTime * int64(time.Millisecond)
+func (e EntityImpl) Version() uint64 {
+	number, err := strconv.ParseUint(*e.LastEvent.EventID, 10, 64)
+	if err != nil {
+		panic(fmt.Errorf("cannot get entity version\n%v", err))
+	}
+	return number
+}
+
+func (e *EntityImpl) State(v interface{}) {
+	json := util.MarshalJson(e.LastEvent.EntityState)
+	util.UnmarshalJson(json, v)
+}
+
+func (e EntityImpl) UpdatedAt() time.Time {
+	nanoseconds := *e.LastEvent.EventTime * int64(time.Millisecond)
 	return time.Unix(0, nanoseconds)
 }
 
-func (e *entityImpl) Owner() string {
-	return e.lastEvent.SourceOwner
+func (e EntityImpl) UpdatedBy() string {
+	return *e.LastEvent.EventAuthor
 }
 
-func (e *entityImpl) Version() uint64 {
-	return e.lastEvent.EventID
+func (e EntityImpl) CreatedAt() time.Time {
+	nanoseconds := *e.LastEvent.EntityCreatedAt * int64(time.Millisecond)
+	return time.Unix(0, nanoseconds)
 }
 
-func (e *entityImpl) State(v interface{}) {
-	if e.lastEvent.SourceState == nil && e.lastEvent.EventPayload == nil && e.lastEvent.Reference != nil {
-		awsContext := e.ctx.Value(model.AwsContext).(*model.Context)
-		newValue := &model.EventObject{}
-		awsContext.AwsObjectStore.GetObject(e.ctx, e.lastEvent.Reference, newValue)
-		e.lastEvent = newValue
-	}
-
-	var json []byte
-	if e.lastEvent.SourceState == nil {
-		json = util.MarshalJson(e.lastEvent.EventPayload)
-	} else {
-		json = util.MarshalJson(e.lastEvent.SourceState)
-	}
-	util.UnmarshalJson(json, v)
+func (e EntityImpl) CreatedBy() string {
+	return *e.LastEvent.EntityCreatedBy
 }
