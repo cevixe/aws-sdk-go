@@ -8,8 +8,8 @@ github.com/aws/aws-sdk-go v1.37.15 h1:W7l7gLLMcYRlg6a+uvf3Zz4jYwdqYzhe5ymqwWoOhp
 github.com/aws/aws-sdk-go v1.37.15/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-xray-sdk-go v1.3.0 h1:O+jtGCD4nl8CkZPWpj2O6RqNXw1v4WTtRSJhFrniQ8s=
 github.com/aws/aws-xray-sdk-go v1.3.0/go.mod h1:tmxq1c+yeEbMh39OmRFuXOrse5ajRlMmDXJ6LrCVsIs=
-github.com/cevixe/core-sdk-go v0.3.0 h1:PHk6jnTmHOLa7KCzG6kKgCPI8xzBmOC/WGQA9F0xlnc=
-github.com/cevixe/core-sdk-go v0.3.0/go.mod h1:cmFA/qyd0nwTv3uaQRoYowd+xfiKqQtsPIJuG8Qht2I=
+github.com/cevixe/core-sdk-go v0.3.1 h1:IxdhJWxcuZ3SFPphixp7klshUw7bmf6FdsemC+8EWXE=
+github.com/cevixe/core-sdk-go v0.3.1/go.mod h1:cmFA/qyd0nwTv3uaQRoYowd+xfiKqQtsPIJuG8Qht2I=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/davecgh/go-spew v0.0.0-20160907170601-6d212800a42e/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
