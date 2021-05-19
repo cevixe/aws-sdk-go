@@ -22,18 +22,26 @@ func NewEventFactory() core.EventFactory {
 }
 
 func (f eventFactoryImpl) NewCommandEvent(ctx context.Context, data interface{}) core.Event {
-	return newDefaultEvent(ctx, core.CommandEvent, data, nil, nil)
+	return newDefaultEvent(ctx, core.CommandEvent, data, "", nil, nil)
 }
 
 func (f eventFactoryImpl) NewBusinessEvent(ctx context.Context, data interface{}) core.Event {
-	return newDefaultEvent(ctx, core.BusinessEvent, data, nil, nil)
+	return newDefaultEvent(ctx, core.BusinessEvent, data, "", nil, nil)
 }
 
 func (f eventFactoryImpl) NewDomainEvent(ctx context.Context, data interface{}, entity core.Entity, state interface{}) core.Event {
-	return newDefaultEvent(ctx, core.DomainEvent, data, entity, state)
+	return newDefaultEvent(ctx, core.DomainEvent, data, entity.ID(), entity, state)
 }
 
-func newDefaultEvent(ctx context.Context, class core.EventClass, data interface{}, entity core.Entity, state interface{}) core.Event {
+func (f eventFactoryImpl) NewFirstDomainEvent(ctx context.Context, data interface{}, state interface{}) core.Event {
+	return newDefaultEvent(ctx, core.DomainEvent, data, "", nil, state)
+}
+
+func (f eventFactoryImpl) NewFirstDomainEventWithCustomID(ctx context.Context, data interface{}, id string, state interface{}) core.Event {
+	return newDefaultEvent(ctx, core.DomainEvent, data, id, nil, state)
+}
+
+func newDefaultEvent(ctx context.Context, class core.EventClass, data interface{}, id string, entity core.Entity, state interface{}) core.Event {
 
 	trigger := ctx.Value(cevixe.CevixeEventTrigger).(core.Event)
 	eventType := util.GetTypeName(data)
@@ -49,19 +57,23 @@ func newDefaultEvent(ctx context.Context, class core.EventClass, data interface{
 		TriggerID:     aws.String(trigger.ID()),
 		Transaction:   aws.String(trigger.Transaction()),
 	}
-	addEntityMetadata(class, entity, state, eventRecord)
+	addEntityMetadata(class, id, entity, state, eventRecord)
 	addEventIdentity(class, data, entity, state, eventRecord)
 
 	return NewEvent(ctx, eventRecord)
 }
 
-func addEntityMetadata(class core.EventClass, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
+func addEntityMetadata(class core.EventClass, id string, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
 
 	if class != core.DomainEvent {
 		return
 	}
 	if entity == nil {
-		record.EntityID = aws.String(uuid.NewString())
+		if id == "" {
+			record.EntityID = aws.String(uuid.NewString())
+		} else {
+			record.EntityID = aws.String(id)
+		}
 		record.EntityType = aws.String(util.GetTypeName(state))
 		record.EntityCreatedAt = record.EventTime
 		record.EntityCreatedBy = record.EventAuthor
