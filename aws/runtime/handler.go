@@ -18,7 +18,7 @@ func readCevixeEvent(ctx context.Context, event events.SQSEvent) core.Event {
 	eventRecord := &model.AwsEventRecord{}
 	sqs.UnmarshallSQSEvent(event, eventRecord)
 	if eventRecord.Reference != nil && eventRecord.EventData == nil {
-		awsContext.AwsObjectStore.GetObject(ctx, eventRecord.Reference, eventRecord)
+		awsContext.AwsObjectStore.GetJsonObject(ctx, *eventRecord.Reference, eventRecord)
 	}
 	return impl.NewEvent(ctx, eventRecord)
 }

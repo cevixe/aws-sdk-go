@@ -3,6 +3,8 @@ package model
 import "context"
 
 type AwsObjectStore interface {
-	GetObject(ctx context.Context, reference *AwsObjectStoreReference, v interface{})
-	SaveObject(ctx context.Context, id string, v interface{}) *AwsObjectStoreReference
+	GetRawObject(ctx context.Context, id string) []byte
+	SaveRawObject(ctx context.Context, id string, buffer []byte)
+	GetJsonObject(ctx context.Context, id string, v interface{})
+	SaveJsonObject(ctx context.Context, id string, v interface{})
 }

@@ -24,7 +24,7 @@ func (e eventStoreImpl) GetLastEvent(ctx context.Context, source string) core.Ev
 		return nil
 	}
 	if eventValue.Reference != nil && eventValue.EventData == nil {
-		e.objectStore.GetObject(ctx, eventValue.Reference, eventValue)
+		e.objectStore.GetJsonObject(ctx, *eventValue.Reference, eventValue)
 	}
 	return NewEvent(ctx, eventValue)
 }
@@ -35,7 +35,7 @@ func (e eventStoreImpl) GetEventByID(ctx context.Context, source string, id stri
 		return nil
 	}
 	if eventValue.Reference != nil && eventValue.EventData == nil {
-		e.objectStore.GetObject(ctx, eventValue.Reference, eventValue)
+		e.objectStore.GetJsonObject(ctx, *eventValue.Reference, eventValue)
 	}
 	return NewEvent(ctx, eventValue)
 }

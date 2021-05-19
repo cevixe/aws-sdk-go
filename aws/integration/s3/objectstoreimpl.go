@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,26 +13,20 @@ import (
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
 	"io/ioutil"
 	"os"
-	"strings"
 )
 
 type objectStoreImpl struct {
 	objectStoreBucket string
-	objectStoreRegion string
-	s3ClientsCache    map[string]s3iface.S3API
-	sessionFactory    session.Factory
+	s3Client          s3iface.S3API
 }
 
 func NewS3ObjectStore(
 	objectStoreBucket string,
-	objectStoreRegion string,
-	sessionFactory session.Factory) model.AwsObjectStore {
+	s3Client s3iface.S3API) model.AwsObjectStore {
 
 	return &objectStoreImpl{
 		objectStoreBucket: objectStoreBucket,
-		objectStoreRegion: objectStoreRegion,
-		s3ClientsCache:    map[string]s3iface.S3API{},
-		sessionFactory:    sessionFactory,
+		s3Client:          s3Client,
 	}
 }
 
@@ -39,68 +34,64 @@ func NewDefaultS3ObjectStore(sessionFactory session.Factory) model.AwsObjectStor
 
 	region := os.Getenv(env.AwsRegion)
 	objectStoreBucketName := os.Getenv(env.CevixeObjectStoreBucketName)
+	s3Client := s3.New(sessionFactory.GetSession(region))
 
-	return NewS3ObjectStore(objectStoreBucketName, region, sessionFactory)
+	return NewS3ObjectStore(objectStoreBucketName, s3Client)
 }
 
-func (o *objectStoreImpl) getClient(region string) s3iface.S3API {
-	if o.s3ClientsCache[region] != nil {
-		return o.s3ClientsCache[region]
-	}
-
-	sess := o.sessionFactory.GetSession(region)
-	newClient := s3.New(sess)
-	o.s3ClientsCache[region] = newClient
-
-	return newClient
+func (o objectStoreImpl) GetRawObject(ctx context.Context, id string) []byte {
+	return o.getObject(ctx, id)
 }
 
-func (o objectStoreImpl) GetObject(ctx context.Context, reference *model.AwsObjectStoreReference, v interface{}) {
+func (o objectStoreImpl) GetJsonObject(ctx context.Context, id string, v interface{}) {
+	buffer := o.getObject(ctx, id)
+	util2.UnmarshalJson(buffer, v)
+}
+
+func (o objectStoreImpl) getObject(ctx context.Context, id string) []byte {
 
 	input := &s3.GetObjectInput{
-		Bucket:    aws.String(reference.Bucket),
-		Key:       aws.String(reference.Key),
-		VersionId: reference.Version,
+		Bucket: aws.String(o.objectStoreBucket),
+		Key:    aws.String(id),
 	}
 
-	client := o.getClient(reference.Region)
-	output, err := client.GetObjectWithContext(ctx, input)
+	output, err := o.s3Client.GetObjectWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot get reference(%v) from S3\n%v", reference, err))
+		panic(fmt.Errorf("cannot get reference(%v) from S3\n%v", id, err))
 	}
 
 	buffer, err := ioutil.ReadAll(output.Body)
 	if err != nil {
-		panic(fmt.Errorf("cannot unmarshal object(%v) from S3\n%v", reference, err))
+		panic(fmt.Errorf("cannot unmarshal object(%v) from S3\n%v", id, err))
 	}
 
-	util2.UnmarshalJson(buffer, v)
+	return buffer
 }
 
-func (o objectStoreImpl) SaveObject(ctx context.Context, key string, v interface{}) *model.AwsObjectStoreReference {
+func (o objectStoreImpl) SaveRawObject(ctx context.Context, id string, buffer []byte) {
+	o.saveObject(ctx, id, "binary/octet-stream", buffer)
+}
 
-	json := util2.MarshalJsonString(v)
-	reader := strings.NewReader(json)
+func (o objectStoreImpl) SaveJsonObject(ctx context.Context, id string, v interface{}) {
+	buffer := util2.MarshalJson(v)
+	o.saveObject(ctx, id, "application/json", buffer)
+}
+
+func (o objectStoreImpl) saveObject(ctx context.Context, id string, contentType string, buffer []byte) {
+
+	reader := bytes.NewReader(buffer)
 
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(o.objectStoreBucket),
-		Key:         aws.String(key),
-		ContentType: aws.String("application/json"),
+		Key:         aws.String(id),
+		ContentType: aws.String(contentType),
 		Body:        aws.ReadSeekCloser(reader),
 	}
 
-	client := o.getClient(o.objectStoreRegion)
-	output, err := client.PutObjectWithContext(ctx, input)
+	_, err := o.s3Client.PutObjectWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot put object(%s) to S3\n%v", key, err))
-	}
-
-	return &model.AwsObjectStoreReference{
-		Region:  o.objectStoreRegion,
-		Bucket:  o.objectStoreBucket,
-		Key:     key,
-		Version: output.VersionId,
+		panic(fmt.Errorf("cannot put object(%s) to S3\n%v", id, err))
 	}
 }

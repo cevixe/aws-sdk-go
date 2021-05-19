@@ -16,5 +16,5 @@ type AwsEventRecord struct {
 	TriggerSource   *string                  `json:"trigger_source,omitempty"`
 	TriggerID       *string                  `json:"trigger_id,omitempty"`
 	Transaction     *string                  `json:"transaction,omitempty"`
-	Reference       *AwsObjectStoreReference `json:"reference,omitempty"`
+	Reference       *string 				 `json:"reference,omitempty"`
 }
