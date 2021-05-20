@@ -37,14 +37,29 @@ func NewDefaultDynamodbStateStore(sessionFactory session.Factory) model.AwsState
 }
 
 func (s stateStoreImpl) UpdateState(ctx context.Context, state *model.AwsStateRecord) {
-	input := &dynamodb.PutItemInput{
-		TableName: aws.String(s.stateStoreTable),
-		Item:      MarshallDynamodbItem(state),
-	}
+	if state.State == nil {
+		input := &dynamodb.DeleteItemInput{
+			TableName: aws.String(s.stateStoreTable),
+			Key: map[string]*dynamodb.AttributeValue{
+				"type": {S: aws.String(state.Type)},
+				"id":   {S: aws.String(state.ID)},
+			},
+		}
 
-	_, err := s.dynamodbClient.PutItemWithContext(ctx, input)
-	if err != nil {
-		panic(fmt.Errorf("cannot update state record\n%v", err))
+		_, err := s.dynamodbClient.DeleteItemWithContext(ctx, input)
+		if err != nil {
+			panic(fmt.Errorf("cannot update state record\n%v", err))
+		}
+	} else {
+		input := &dynamodb.PutItemInput{
+			TableName: aws.String(s.stateStoreTable),
+			Item:      MarshallDynamodbItem(state),
+		}
+
+		_, err := s.dynamodbClient.PutItemWithContext(ctx, input)
+		if err != nil {
+			panic(fmt.Errorf("cannot update state record\n%v", err))
+		}
 	}
 }
 
