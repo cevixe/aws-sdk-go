@@ -10,7 +10,6 @@ import (
 	"github.com/cevixe/core-sdk-go/core"
 	"github.com/google/uuid"
 	"github.com/stoewer/go-strcase"
-	"strconv"
 	"time"
 )
 
@@ -98,11 +97,11 @@ func addEventIdentity(class core.EventClass, data interface{}, entity core.Entit
 		if entity == nil {
 			entityTypeName := strcase.KebabCase(util.GetTypeName(state))
 			record.EventSource = aws.String("/domain/" + entityTypeName + "/" + *record.EntityID)
-			record.EventID = aws.String("1")
+			record.EventID = aws.String(fmt.Sprintf("%020d", 1))
 		} else {
 			entityTypeName := strcase.KebabCase(entity.Type())
 			record.EventSource = aws.String("/domain/" + entityTypeName + "/" + *record.EntityID)
-			record.EventID = aws.String(strconv.FormatUint(entity.Version()+1, 10))
+			record.EventID = aws.String(fmt.Sprintf("%020d", entity.Version()+1))
 		}
 		break
 	case core.BusinessEvent:
