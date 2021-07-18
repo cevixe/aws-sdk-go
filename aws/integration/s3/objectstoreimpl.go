@@ -52,7 +52,7 @@ func (o objectStoreImpl) getObject(ctx context.Context, id string) []byte {
 
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(o.objectStoreBucket),
-		Key:    aws.String(id),
+		Key:    aws.String("object/" + id),
 	}
 
 	output, err := o.s3Client.GetObjectWithContext(ctx, input)
@@ -84,7 +84,7 @@ func (o objectStoreImpl) saveObject(ctx context.Context, id string, contentType 
 
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(o.objectStoreBucket),
-		Key:         aws.String(id),
+		Key:         aws.String("object/" + id),
 		ContentType: aws.String(contentType),
 		Body:        aws.ReadSeekCloser(reader),
 	}
