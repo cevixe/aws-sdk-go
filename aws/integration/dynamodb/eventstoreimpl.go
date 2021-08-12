@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
-	"github.com/cevixe/aws-sdk-go/aws/integration/session"
+	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"os"
 )
@@ -30,12 +30,11 @@ func NewDynamodbEventStore(
 	}
 }
 
-func NewDefaultDynamodbEventStore(sessionFactory session.Factory) model.AwsEventStore {
+func NewDefaultDynamodbEventStore(awsFactory factory.AwsFactory) model.AwsEventStore {
 
-	region := os.Getenv(env.AwsRegion)
 	eventStoreTableName := os.Getenv(env.CevixeEventStoreTableName)
 	controlStoreTableName := os.Getenv(env.CevixeControlStoreTableName)
-	dynamodbClient := dynamodb.New(sessionFactory.GetSession(region))
+	dynamodbClient := awsFactory.DynamodbClient()
 
 	return NewDynamodbEventStore(eventStoreTableName, controlStoreTableName, dynamodbClient)
 }

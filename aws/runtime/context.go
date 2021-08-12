@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/http"
 	"github.com/cevixe/aws-sdk-go/aws/impl"
 	"github.com/cevixe/aws-sdk-go/aws/integration/appsync"
@@ -23,13 +24,15 @@ func configureAwsContext(ctx context.Context) context.Context {
 
 	client := http.NewDefaultHttpClient()
 	sessionFactory := session.NewSessionFactory(client)
-	awsObjectStore := s3.NewDefaultS3ObjectStore(sessionFactory)
-	awsEventStore := dynamodb.NewDefaultDynamodbEventStore(sessionFactory)
-	awsStateStore := dynamodb.NewDefaultDynamodbStateStore(sessionFactory)
-	awsEventBus := sns.NewDefaultSnsEventBus(sessionFactory)
+	awsFactory := factory.New(sessionFactory)
+	awsObjectStore := s3.NewDefaultS3ObjectStore(awsFactory)
+	awsEventStore := dynamodb.NewDefaultDynamodbEventStore(awsFactory)
+	awsStateStore := dynamodb.NewDefaultDynamodbStateStore(awsFactory)
+	awsEventBus := sns.NewDefaultSnsEventBus(awsFactory)
 	awsGraphqlGateway := appsync.NewDefaultAppsyncGateway(sessionFactory)
 
 	awsContext := &impl.Context{
+		AwsFactory:        awsFactory,
 		AwsObjectStore:    awsObjectStore,
 		AwsEventStore:     awsEventStore,
 		AwsEventBus:       awsEventBus,

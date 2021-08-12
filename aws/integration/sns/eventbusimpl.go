@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
-	"github.com/cevixe/aws-sdk-go/aws/integration/session"
+	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
 	"os"
@@ -28,11 +28,10 @@ func NewSnsEventBus(
 	}
 }
 
-func NewDefaultSnsEventBus(sessionFactory session.Factory) model.AwsEventBus {
+func NewDefaultSnsEventBus(awsFactory factory.AwsFactory) model.AwsEventBus {
 
-	region := os.Getenv(env.AwsRegion)
 	eventBusTopicArn := os.Getenv(env.CevixeEventBusTopicArn)
-	snsClient := sns.New(sessionFactory.GetSession(region))
+	snsClient := awsFactory.SnsClient()
 
 	return NewSnsEventBus(eventBusTopicArn, snsClient)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
-	"github.com/cevixe/aws-sdk-go/aws/integration/session"
+	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"os"
 )
@@ -27,11 +27,10 @@ func NewDynamodbStateStore(
 	}
 }
 
-func NewDefaultDynamodbStateStore(sessionFactory session.Factory) model.AwsStateStore {
+func NewDefaultDynamodbStateStore(awsFactory factory.AwsFactory) model.AwsStateStore {
 
-	region := os.Getenv(env.AwsRegion)
 	stateStoreTableName := os.Getenv(env.CevixeStateStoreTableName)
-	dynamodbClient := dynamodb.New(sessionFactory.GetSession(region))
+	dynamodbClient := awsFactory.DynamodbClient()
 
 	return NewDynamodbStateStore(stateStoreTableName, dynamodbClient)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
-	"github.com/cevixe/aws-sdk-go/aws/integration/session"
+	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
 	"io/ioutil"
@@ -30,12 +30,9 @@ func NewS3ObjectStore(
 	}
 }
 
-func NewDefaultS3ObjectStore(sessionFactory session.Factory) model.AwsObjectStore {
-
-	region := os.Getenv(env.AwsRegion)
+func NewDefaultS3ObjectStore(awsFactory factory.AwsFactory) model.AwsObjectStore {
 	objectStoreBucketName := os.Getenv(env.CevixeObjectStoreBucketName)
-	s3Client := s3.New(sessionFactory.GetSession(region))
-
+	s3Client := awsFactory.S3Client()
 	return NewS3ObjectStore(objectStoreBucketName, s3Client)
 }
 
