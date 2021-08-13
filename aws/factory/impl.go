@@ -80,5 +80,9 @@ func (f factoryImpl) readRegion(region []string) string {
 
 func New(sess session.Factory) AwsFactory {
 	region := os.Getenv(env.AwsRegion)
-	return &factoryImpl{region: region, sess: sess}
+	return &factoryImpl{
+		region: region,
+		sess:   sess,
+		cache:  make(map[string]interface{}),
+	}
 }
