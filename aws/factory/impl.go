@@ -33,40 +33,40 @@ func (f *factoryImpl) fromCache(service string, region string) interface{} {
 
 func (f factoryImpl) DynamodbClient(region ...string) dynamodbiface.DynamoDBAPI {
 	reg := f.readRegion(region)
-	client := f.fromCache(DynamoDB, reg).(dynamodbiface.DynamoDBAPI)
+	client := f.fromCache(DynamoDB, reg)
 
 	if client != nil {
-		return client
+		return client.(dynamodbiface.DynamoDBAPI)
 	} else {
 		client = dynamodb.New(f.sess.GetSession(reg))
 		f.toCache(DynamoDB, client, reg)
-		return client
+		return client.(dynamodbiface.DynamoDBAPI)
 	}
 }
 
 func (f factoryImpl) SnsClient(region ...string) snsiface.SNSAPI {
 	reg := f.readRegion(region)
-	client := f.fromCache(SNS, reg).(snsiface.SNSAPI)
+	client := f.fromCache(SNS, reg)
 
 	if client != nil {
-		return client
+		return client.(snsiface.SNSAPI)
 	} else {
 		client = sns.New(f.sess.GetSession(reg))
 		f.toCache(SNS, client, reg)
-		return client
+		return client.(snsiface.SNSAPI)
 	}
 }
 
 func (f factoryImpl) S3Client(region ...string) s3iface.S3API {
 	reg := f.readRegion(region)
-	client := f.fromCache(S3, reg).(s3iface.S3API)
+	client := f.fromCache(S3, reg)
 
 	if client != nil {
-		return client
+		return client.(s3iface.S3API)
 	} else {
 		client = s3.New(f.sess.GetSession(reg))
 		f.toCache(S3, client, reg)
-		return client
+		return client.(s3iface.S3API)
 	}
 }
 
