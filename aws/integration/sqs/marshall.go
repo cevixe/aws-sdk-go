@@ -22,7 +22,7 @@ func UnmarshallSQSEvent(sqsEvent events.SQSEvent, record interface{}) {
 		snsMessage := &events.SNSEntity{}
 		util.UnmarshalJsonString(sqsMessage.Body, snsMessage)
 
-		buff, err := base64.StdEncoding.DecodeString(sqsMessage.Body)
+		buff, err := base64.StdEncoding.DecodeString(snsMessage.Message)
 		if err != nil {
 			util.UnmarshalJsonString(snsMessage.Message, generic)
 		} else {
