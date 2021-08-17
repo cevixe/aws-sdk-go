@@ -1,8 +1,10 @@
 package sqs
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/gzip"
 	"github.com/cevixe/aws-sdk-go/aws/util"
 	"reflect"
 )
@@ -19,7 +21,14 @@ func UnmarshallSQSEvent(sqsEvent events.SQSEvent, record interface{}) {
 		generic := &map[string]interface{}{}
 		snsMessage := &events.SNSEntity{}
 		util.UnmarshalJsonString(sqsMessage.Body, snsMessage)
-		util.UnmarshalJsonString(snsMessage.Message, generic)
+
+		buff, err := base64.StdEncoding.DecodeString(sqsMessage.Body)
+		if err != nil {
+			util.UnmarshalJsonString(snsMessage.Message, generic)
+		} else {
+			jsonBuff := gzip.Decompress(buff)
+			util.UnmarshalJsonString(string(jsonBuff), generic)
+		}
 		messages = append(messages, generic)
 	}
 

@@ -2,6 +2,7 @@ package sns
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -9,6 +10,8 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/gzip"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
 	"os"
 )
@@ -38,8 +41,10 @@ func NewDefaultSnsEventBus(awsFactory factory.AwsFactory) model.AwsEventBus {
 
 func (e eventBusImpl) PublishEvent(ctx context.Context, event *model.AwsEventRecord) {
 
+	toCompress := json.Marshall(event)
+	compressed := gzip.Compress(toCompress)
 	messageJson := util2.MarshalJsonString(map[string]interface{}{
-		"default": util2.MarshalJsonString(event),
+		"default": base64.StdEncoding.EncodeToString(compressed),
 	})
 
 	var input = &sns.PublishInput{
