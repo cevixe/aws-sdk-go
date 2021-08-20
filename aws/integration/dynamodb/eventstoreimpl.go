@@ -134,12 +134,8 @@ func (e eventStoreImpl) GetEventRecordByID(ctx context.Context, source string, i
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(e.eventStoreTable),
 		Key: map[string]*dynamodb.AttributeValue{
-			"#pk": {S: aws.String(source)},
-			"#sk": {S: aws.String(id)},
-		},
-		ExpressionAttributeNames: map[string]*string{
-			"#pk": aws.String("event_source"),
-			"#sk": aws.String("event_id"),
+			"event_source": {S: aws.String(source)},
+			"event_id": {S: aws.String(id)},
 		},
 	}
 
