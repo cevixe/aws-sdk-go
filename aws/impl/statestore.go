@@ -2,9 +2,9 @@ package impl
 
 import (
 	"context"
+	"fmt"
 	"github.com/cevixe/core-sdk-go/core"
 	"github.com/stoewer/go-strcase"
-	"strconv"
 )
 
 type stateStoreImpl struct {
@@ -22,7 +22,7 @@ func (s stateStoreImpl) GetLastVersion(ctx context.Context, typ string, id strin
 
 func (s stateStoreImpl) GetByVersion(ctx context.Context, typ string, id string, version uint64) core.Entity {
 	source := generateEventSource(typ, id)
-	event := s.eventStore.GetEventByID(ctx, source, strconv.FormatUint(version, 10))
+	event := s.eventStore.GetEventByID(ctx, source, fmt.Sprintf("%020d", version))
 	if event == nil {
 		return nil
 	}
