@@ -22,6 +22,9 @@ func NewHandler(delegate core.EventHandler) func(ctx context.Context, event even
 	return func(ctx context.Context, event events.SQSEvent) (err error) {
 
 		cevixeEvent := readCevixeEvent(ctx, event)
+
+		ctx = context.WithValue(ctx, cevixe.CevixeUserID, cevixeEvent.Author())
+		ctx = context.WithValue(ctx, cevixe.CevixeTransaction, cevixeEvent.Transaction())
 		ctx = context.WithValue(ctx, cevixe.CevixeEventTrigger, cevixeEvent)
 		delegate(ctx, cevixeEvent)
 

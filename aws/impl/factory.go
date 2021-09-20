@@ -73,22 +73,29 @@ func (f eventFactoryImpl) NewFirstDomainEventWithCustomIDAndCustomType(ctx conte
 
 func newDefaultEvent(ctx context.Context, class core.EventClass, eventType string, data interface{}, id string, entity core.Entity, state interface{}) core.Event {
 
-	trigger := ctx.Value(cevixe.CevixeEventTrigger).(core.Event)
+	trigger := ctx.Value(cevixe.CevixeEventTrigger)
+	transaction := ctx.Value(cevixe.CevixeTransaction).(string)
+	userID := ctx.Value(cevixe.CevixeUserID).(string)
 	loc, _ := time.LoadLocation("America/Lima")
 	eventTime := time.Now().In(loc)
 	eventTimeStamp := eventTime.UnixNano() / int64(time.Millisecond)
 
 	eventRecord := &model.AwsEventRecord{
-		EventClass:    aws.String(string(class)),
-		EventType:     aws.String(eventType),
-		EventDay:      aws.String(eventTime.Format("YYYY-MM-DD")),
-		EventTime:     aws.Int64(eventTimeStamp),
-		EventAuthor:   aws.String(trigger.Author()),
-		EventData:     toGenericData(data),
-		TriggerSource: aws.String(trigger.Source()),
-		TriggerID:     aws.String(trigger.ID()),
-		Transaction:   aws.String(trigger.Transaction()),
+		EventClass:  aws.String(string(class)),
+		EventType:   aws.String(eventType),
+		EventDay:    aws.String(eventTime.Format("YYYY-MM-DD")),
+		EventTime:   aws.Int64(eventTimeStamp),
+		EventAuthor: aws.String(userID),
+		EventData:   toGenericData(data),
+		Transaction: aws.String(transaction),
 	}
+
+	if trigger != nil {
+		triggerEvent := trigger.(core.Event)
+		eventRecord.TriggerSource = aws.String(triggerEvent.Source())
+		eventRecord.TriggerID = aws.String(triggerEvent.ID())
+	}
+
 	addEntityMetadata(class, id, entity, state, eventRecord)
 	addEventIdentity(class, data, entity, state, eventRecord)
 	eventRecord = compressEventRecord(ctx, eventRecord)
