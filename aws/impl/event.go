@@ -45,17 +45,25 @@ func (e EventImpl) Author() string {
 	return *e.Record.EventAuthor
 }
 
-func (e EventImpl) Data(v interface{}) {
-	json := util.MarshalJsonString(e.Record.EventData)
-	util.UnmarshalJsonString(json, v)
+func (e *EventImpl) Data(v interface{}) {
+	if e.Record.EventData == nil {
+		location := e.Record.ContentLocation
+		if e.Record.Reference != nil && location == "" {
+			location = *e.Record.Reference
+		}
+		e.Record = GetEventContent(e.Ctx, location, e.Record.ContentEncoding, e.Record.ContentType, e.Record.Content)
+	}
+	json := util.MarshalJson(e.Record.EventData)
+	util.UnmarshalJson(json, v)
 }
 
 func (e EventImpl) Entity() core.Entity {
 	if core.EventClass(*e.Record.EventClass) == core.CommandEvent ||
-		core.EventClass(*e.Record.EventClass) == core.BusinessEvent {
+		core.EventClass(*e.Record.EventClass) == core.BusinessEvent ||
+		core.EventClass(*e.Record.EventClass) == core.SystemEvent {
 		return nil
 	}
-	return &EntityImpl{LastEvent: e.Record}
+	return NewEntity(e.Ctx, nil, e.Record)
 }
 
 func (e EventImpl) Transaction() string {
@@ -64,6 +72,7 @@ func (e EventImpl) Transaction() string {
 
 func (e EventImpl) Trigger() core.Event {
 	awsContext := e.Ctx.Value(AwsContext).(*Context)
-	triggerValue := awsContext.AwsEventStore.GetEventRecordByID(e.Ctx, *e.Record.TriggerSource, *e.Record.TriggerID)
+	triggerValue := awsContext.AwsEventStore.GetEventRecordByID(
+		e.Ctx, *e.Record.TriggerSource, *e.Record.TriggerID)
 	return NewEvent(e.Ctx, triggerValue)
 }
