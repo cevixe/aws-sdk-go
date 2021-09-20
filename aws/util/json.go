@@ -4,8 +4,7 @@ import "encoding/json"
 
 func UnmarshalJsonString(data string, v interface{}) {
 	buffer := []byte(data)
-	err := json.Unmarshal(buffer, v)
-	if err != nil {
+	if err := json.Unmarshal(buffer, v); err != nil {
 		panic(err)
 	}
 }
@@ -19,8 +18,7 @@ func MarshalJsonString(v interface{}) string {
 }
 
 func UnmarshalJson(data []byte, v interface{}) {
-	err := json.Unmarshal(data, v)
-	if err != nil {
+	if err := json.Unmarshal(data, v); err != nil {
 		panic(err)
 	}
 }
