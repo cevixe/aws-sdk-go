@@ -6,8 +6,7 @@ import (
 )
 
 func Unmarshall(buf []byte, o interface{}) {
-	err := json.Unmarshal(buf, o)
-	if err != nil {
+	if err := json.Unmarshal(buf, o); err != nil {
 		log.Fatal(err)
 	}
 }
