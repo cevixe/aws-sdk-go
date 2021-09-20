@@ -46,8 +46,8 @@ func configureAwsContext(ctx context.Context) context.Context {
 func configureCevixeContext(ctx context.Context) context.Context {
 
 	awsContext := ctx.Value(impl.AwsContext).(*impl.Context)
-	eventStore := impl.NewEventStore(awsContext.AwsEventStore, awsContext.AwsObjectStore)
-	stateStore := impl.NewStateStore(eventStore)
+	eventStore := impl.NewEventStore(awsContext.AwsEventStore)
+	stateStore := impl.NewStateStore(awsContext.AwsEventStore, awsContext.AwsStateStore)
 	eventFactory := impl.NewEventFactory()
 
 	ctx = context.WithValue(ctx, cevixe.CevixeEventFactory, eventFactory)

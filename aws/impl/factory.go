@@ -17,11 +17,10 @@ import (
 )
 
 type eventFactoryImpl struct {
-	ctx context.Context
 }
 
-func NewEventFactory(ctx context.Context) core.EventFactory {
-	return &eventFactoryImpl{ctx: ctx}
+func NewEventFactory() core.EventFactory {
+	return &eventFactoryImpl{}
 }
 
 func (f eventFactoryImpl) NewCommandEvent(ctx context.Context, data interface{}) core.Event {

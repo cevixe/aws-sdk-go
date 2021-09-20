@@ -6,6 +6,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/impl"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/aws-sdk-go/aws/runtime/control"
+	"github.com/cevixe/core-sdk-go/cevixe"
 	"github.com/cevixe/core-sdk-go/core"
 	"time"
 )
@@ -33,13 +34,20 @@ func FullExactlyOnce(ctx context.Context, delegate core.EventHandler) core.Event
 		blockControlRecord := control.NewControlRecord(ctx, event, model.BlockControl, nextIntent)
 		awsContext.AwsEventStore.CreateControlRecord(ctx, blockControlRecord)
 
+		confirmControlRecord := control.NewControlRecord(ctx, event, model.ConfirmControl, nextIntent)
+		defer func() {
+			HandleRecovery(ctx, recover(), confirmControlRecord)
+		}()
+
 		newCevixeEvent := delegate(ctx, event)
 
-		if newCevixeEvent != nil {
-			eventRecord := newCevixeEvent.(*impl.EventImpl).Record
-			confirmControlRecord := control.NewControlRecord(ctx, event, model.ConfirmControl, nextIntent)
-			awsContext.AwsEventStore.CreateControlledEventRecord(ctx, eventRecord, confirmControlRecord)
+		if newCevixeEvent == nil {
+			factory := ctx.Value(cevixe.CevixeEventFactory).(core.EventFactory)
+			newCevixeEvent = factory.NewSystemEvent(ctx, core.NoEventGenerated{Handler: awsContext.AwsHandlerID})
 		}
+
+		eventRecord := newCevixeEvent.(*impl.EventImpl).Record
+		awsContext.AwsEventStore.CreateControlledEventRecord(ctx, eventRecord, confirmControlRecord)
 
 		return newCevixeEvent
 	}
