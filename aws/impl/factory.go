@@ -24,33 +24,56 @@ func NewEventFactory() core.EventFactory {
 }
 
 func (f eventFactoryImpl) NewCommandEvent(ctx context.Context, data interface{}) core.Event {
-	return newDefaultEvent(ctx, core.CommandEvent, data, "", nil, nil)
+	return newDefaultEvent(ctx, core.CommandEvent, util.GetTypeName(data), data, "", nil, nil)
+}
+
+func (f eventFactoryImpl) NewCommandEventWithCustomType(ctx context.Context, typ string, data interface{}) core.Event {
+	return newDefaultEvent(ctx, core.CommandEvent, typ, data, "", nil, nil)
 }
 
 func (f eventFactoryImpl) NewBusinessEvent(ctx context.Context, data interface{}) core.Event {
-	return newDefaultEvent(ctx, core.BusinessEvent, data, "", nil, nil)
+	return newDefaultEvent(ctx, core.BusinessEvent, util.GetTypeName(data), data, "", nil, nil)
+}
+
+func (f eventFactoryImpl) NewBusinessEventWithCustomType(ctx context.Context, typ string, data interface{}) core.Event {
+	return newDefaultEvent(ctx, core.BusinessEvent, typ, data, "", nil, nil)
 }
 
 func (f eventFactoryImpl) NewSystemEvent(ctx context.Context, data interface{}) core.Event {
-	return newDefaultEvent(ctx, core.SystemEvent, data, "", nil, nil)
+	return newDefaultEvent(ctx, core.SystemEvent, util.GetTypeName(data), data, "", nil, nil)
+}
+
+func (f eventFactoryImpl) NewSystemEventWithCustomType(ctx context.Context, typ string, data interface{}) core.Event {
+	return newDefaultEvent(ctx, core.SystemEvent, typ, data, "", nil, nil)
 }
 
 func (f eventFactoryImpl) NewDomainEvent(ctx context.Context, data interface{}, entity core.Entity, state interface{}) core.Event {
-	return newDefaultEvent(ctx, core.DomainEvent, data, entity.ID(), entity, state)
+	return newDefaultEvent(ctx, core.DomainEvent, util.GetTypeName(data), data, entity.ID(), entity, state)
+}
+
+func (f eventFactoryImpl) NewDomainEventWithCustomType(ctx context.Context, typ string, data interface{}, entity core.Entity, state interface{}) core.Event {
+	return newDefaultEvent(ctx, core.DomainEvent, typ, data, entity.ID(), entity, state)
 }
 
 func (f eventFactoryImpl) NewFirstDomainEvent(ctx context.Context, data interface{}, state interface{}) core.Event {
-	return newDefaultEvent(ctx, core.DomainEvent, data, "", nil, state)
+	return newDefaultEvent(ctx, core.DomainEvent, util.GetTypeName(data), data, "", nil, state)
+}
+
+func (f eventFactoryImpl) NewFirstDomainEventWithCustomType(ctx context.Context, typ string, data interface{}, state interface{}) core.Event {
+	return newDefaultEvent(ctx, core.DomainEvent, typ, data, "", nil, state)
 }
 
 func (f eventFactoryImpl) NewFirstDomainEventWithCustomID(ctx context.Context, data interface{}, id string, state interface{}) core.Event {
-	return newDefaultEvent(ctx, core.DomainEvent, data, id, nil, state)
+	return newDefaultEvent(ctx, core.DomainEvent, util.GetTypeName(data), data, id, nil, state)
 }
 
-func newDefaultEvent(ctx context.Context, class core.EventClass, data interface{}, id string, entity core.Entity, state interface{}) core.Event {
+func (f eventFactoryImpl) NewFirstDomainEventWithCustomIDAndCustomType(ctx context.Context, typ string, data interface{}, id string, state interface{}) core.Event {
+	return newDefaultEvent(ctx, core.DomainEvent, typ, data, id, nil, state)
+}
+
+func newDefaultEvent(ctx context.Context, class core.EventClass, eventType string, data interface{}, id string, entity core.Entity, state interface{}) core.Event {
 
 	trigger := ctx.Value(cevixe.CevixeEventTrigger).(core.Event)
-	eventType := util.GetTypeName(data)
 	loc, _ := time.LoadLocation("America/Lima")
 	eventTime := time.Now().In(loc)
 	eventTimeStamp := eventTime.UnixNano() / int64(time.Millisecond)
