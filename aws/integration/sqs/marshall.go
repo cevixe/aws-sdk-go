@@ -2,10 +2,10 @@ package sqs
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/cevixe/aws-sdk-go/aws/serdes/gzip"
 	"github.com/cevixe/aws-sdk-go/aws/util"
+	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -13,7 +13,7 @@ func UnmarshallSQSEvent(sqsEvent events.SQSEvent, record interface{}) {
 
 	recordType := reflect.TypeOf(record)
 	if recordType.Kind() != reflect.Ptr {
-		panic(fmt.Errorf("record parameter must be a pointer"))
+		panic(errors.New("record parameter must be a pointer"))
 	}
 
 	messages := make([]*map[string]interface{}, 0, len(sqsEvent.Records))

@@ -3,7 +3,6 @@ package sns
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -13,6 +12,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/serdes/gzip"
 	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
+	"github.com/pkg/errors"
 	"os"
 )
 
@@ -65,6 +65,6 @@ func (e eventBusImpl) PublishEvent(ctx context.Context, event *model.AwsEventRec
 
 	_, err := e.snsClient.PublishWithContext(ctx, input)
 	if err != nil {
-		panic(fmt.Errorf("cannot publish event to sns\n%v", err))
+		panic(errors.Wrap(err, "cannot publish event to sns"))
 	}
 }

@@ -9,36 +9,47 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
+	"github.com/pkg/errors"
 	"os"
+	"strconv"
+	"time"
 )
 
 type stateStoreImpl struct {
-	stateStoreTable string
-	dynamodbClient  dynamodbiface.DynamoDBAPI
+	eventStoreTableName   string
+	stateStoreTableName   string
+	stateStoreIndexByTime string
+	dynamodbClient        dynamodbiface.DynamoDBAPI
 }
 
 func NewDynamodbStateStore(
-	stateStoreTable string,
+	eventStoreTableName string,
+	stateStoreTableName string,
+	stateStoreIndexByTime string,
 	dynamodbClient dynamodbiface.DynamoDBAPI) model.AwsStateStore {
 
 	return &stateStoreImpl{
-		stateStoreTable: stateStoreTable,
-		dynamodbClient:  dynamodbClient,
+		eventStoreTableName:   eventStoreTableName,
+		stateStoreTableName:   stateStoreTableName,
+		stateStoreIndexByTime: stateStoreIndexByTime,
+		dynamodbClient:        dynamodbClient,
 	}
 }
 
 func NewDefaultDynamodbStateStore(awsFactory factory.AwsFactory) model.AwsStateStore {
 
+	eventStoreTableName := os.Getenv(env.CevixeEventStoreTableName)
 	stateStoreTableName := os.Getenv(env.CevixeStateStoreTableName)
+	stateStoreIndexByTime := os.Getenv(env.CevixeStateStoreIndexByTime)
 	dynamodbClient := awsFactory.DynamodbClient()
 
-	return NewDynamodbStateStore(stateStoreTableName, dynamodbClient)
+	return NewDynamodbStateStore(eventStoreTableName, stateStoreTableName, stateStoreIndexByTime, dynamodbClient)
 }
 
 func (s stateStoreImpl) UpdateState(ctx context.Context, state *model.AwsStateRecord) {
 	if state.State == nil {
 		input := &dynamodb.DeleteItemInput{
-			TableName: aws.String(s.stateStoreTable),
+			TableName: aws.String(s.stateStoreTableName),
 			Key: map[string]*dynamodb.AttributeValue{
 				"type": {S: aws.String(state.Type)},
 				"id":   {S: aws.String(state.ID)},
@@ -47,17 +58,17 @@ func (s stateStoreImpl) UpdateState(ctx context.Context, state *model.AwsStateRe
 
 		_, err := s.dynamodbClient.DeleteItemWithContext(ctx, input)
 		if err != nil {
-			panic(fmt.Errorf("cannot update state record\n%v", err))
+			panic(errors.Wrap(err, "cannot update state record"))
 		}
 	} else {
 		input := &dynamodb.PutItemInput{
-			TableName: aws.String(s.stateStoreTable),
+			TableName: aws.String(s.stateStoreTableName),
 			Item:      MarshallDynamodbItem(state),
 		}
 
 		_, err := s.dynamodbClient.PutItemWithContext(ctx, input)
 		if err != nil {
-			panic(fmt.Errorf("cannot update state record\n%v", err))
+			panic(errors.Wrap(err, "cannot update state record"))
 		}
 	}
 }
@@ -87,12 +98,53 @@ func (s stateStoreImpl) UpdateStates(ctx context.Context, states []*model.AwsSta
 	}
 	input := &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]*dynamodb.WriteRequest{
-			s.stateStoreTable: requests,
+			s.stateStoreTableName: requests,
 		},
 	}
 
 	_, err := s.dynamodbClient.BatchWriteItemWithContext(ctx, input)
 	if err != nil {
-		panic(fmt.Errorf("cannot update state records\n%v", err))
+		panic(errors.Wrap(err, "cannot update state records"))
+	}
+}
+
+func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.Time, nextToken *string, limit *int64) *model.AwsStateRecordPage {
+
+	var afterTime time.Time
+	if after != nil {
+		afterTime = *after
+	}
+	unixTime := afterTime.Unix() / int64(time.Millisecond)
+	selectStatement := fmt.Sprintf(
+		"SELECT * FROM %s.%s WHERE type = ? AND updated_at >= ? ORDER BY updated_at DESC LIMIT %d",
+		s.stateStoreTableName, s.stateStoreIndexByTime, *FixPaginationLimit(limit))
+
+	params := &dynamodb.ExecuteStatementInput{
+		Statement: aws.String(selectStatement),
+		NextToken: nextToken,
+		Parameters: []*dynamodb.AttributeValue{
+			{S: aws.String(typ)},
+			{N: aws.String(strconv.FormatInt(unixTime, 64))},
+		},
+	}
+
+	output, err := s.dynamodbClient.ExecuteStatementWithContext(ctx, params)
+	if err != nil {
+		panic(errors.Wrapf(err, "cannot get state records"))
+	}
+
+	if len(output.Items) == 0 {
+		return &model.AwsStateRecordPage{
+			Items:     make([]*model.AwsStateRecord, 0),
+			NextToken: output.NextToken,
+		}
+	}
+
+	records := make([]*model.AwsStateRecord, 0)
+	UnmarshallDynamodbItemList(output.Items, &records)
+
+	return &model.AwsStateRecordPage{
+		Items:     records,
+		NextToken: output.NextToken,
 	}
 }

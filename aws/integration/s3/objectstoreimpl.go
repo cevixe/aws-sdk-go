@@ -3,7 +3,6 @@ package s3
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
@@ -11,6 +10,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 )
@@ -55,12 +55,12 @@ func (o objectStoreImpl) getObject(ctx context.Context, id string) []byte {
 	output, err := o.s3Client.GetObjectWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot get reference(%v) from S3\n%v", id, err))
+		panic(errors.Wrapf(err, "cannot get reference(%v) from S3", id))
 	}
 
 	buffer, err := ioutil.ReadAll(output.Body)
 	if err != nil {
-		panic(fmt.Errorf("cannot unmarshal object(%v) from S3\n%v", id, err))
+		panic(errors.Wrapf(err, "cannot unmarshal object(%v) from S3", id))
 	}
 
 	return buffer
@@ -89,6 +89,6 @@ func (o objectStoreImpl) saveObject(ctx context.Context, id string, contentType 
 	_, err := o.s3Client.PutObjectWithContext(ctx, input)
 
 	if err != nil {
-		panic(fmt.Errorf("cannot put object(%s) to S3\n%v", id, err))
+		panic(errors.Wrapf(err, "cannot put object(%s) to S3", id))
 	}
 }

@@ -3,12 +3,12 @@ package appsync
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/integration/session"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	util2 "github.com/cevixe/aws-sdk-go/aws/util"
+	"github.com/pkg/errors"
 	"net/http"
 	"os"
 	"time"
@@ -51,13 +51,13 @@ func (g gatewayImpl) buildHttpRequest(request *model.AwsGraphqlRequest) *http.Re
 	body := util2.MarshalJson(request)
 	req, err := http.NewRequest("POST", g.url, bytes.NewReader(body))
 	if err != nil {
-		panic(fmt.Errorf("cannot generate http request\n%v", err))
+		panic(errors.Wrap(err, "cannot generate http request"))
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	_, err = g.signer.Sign(req, bytes.NewReader(body), "appsync", g.region, time.Now())
 	if err != nil {
-		panic(fmt.Errorf("cannot sign http request\n%v", err))
+		panic(errors.Wrap(err, "cannot sign http request"))
 	}
 
 	return req
@@ -68,7 +68,8 @@ func (g gatewayImpl) readHttpResponse(response *http.Response) *model.AwsGraphql
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(response.Body)
 	if err != nil {
-		panic(fmt.Errorf("cannot read http response\n%v", err))
+
+		panic(errors.Wrap(err, "cannot read http response"))
 	}
 
 	res := &model.AwsGraphqlResponse{}
@@ -83,7 +84,7 @@ func (g gatewayImpl) ExecuteGraphql(_ context.Context, request *model.AwsGraphql
 
 	response, err := g.client.Do(httpRequest)
 	if err != nil {
-		panic(fmt.Errorf("unexpected error in http call to appsync\n%v", err))
+		panic(errors.Wrap(err, "unexpected error in http call to appsync"))
 	}
 
 	return g.readHttpResponse(response)
