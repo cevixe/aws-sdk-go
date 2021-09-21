@@ -116,7 +116,7 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 	}
 	unixTime := afterTime.Unix() / int64(time.Millisecond)
 	selectStatement := fmt.Sprintf(
-		"SELECT * FROM %s.%s WHERE type = ? AND updated_at >= ? ORDER BY updated_at DESC LIMIT %d",
+		"SELECT * FROM \"%s\".\"%s\" WHERE type = ? AND updated_at >= ? ORDER BY updated_at DESC LIMIT %d",
 		s.stateStoreTableName, s.stateStoreIndexByTime, *FixPaginationLimit(limit))
 
 	params := &dynamodb.ExecuteStatementInput{

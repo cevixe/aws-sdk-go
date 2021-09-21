@@ -223,7 +223,7 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 	beforeTimeStamp := beforeTime.Unix() / int64(time.Millisecond)
 
 	selectStatement := fmt.Sprintf(
-		"SELECT * FROM %s.%s WHERE %s = ? AND %s BETWEEN ? AND ? ORDER BY %s DESC LIMIT %d",
+		"SELECT * FROM \"%s\".\"%s\" WHERE %s = ? AND %s BETWEEN ? AND ? ORDER BY %s DESC LIMIT %d",
 		e.eventStoreTable, index, pkName, skName, skName, *FixPaginationLimit(limit))
 
 	params := &dynamodb.ExecuteStatementInput{
@@ -272,7 +272,7 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 
 	selectStatement := fmt.Sprintf(
 		"SELECT event_source, event_id, event_class, event_type, event_time, event_day, event_author "+
-			"FROM %s WHERE event_source = ? AND event_id BETWEEN ? AND ? ORDER BY event_id DESC LIMIT %d",
+			"FROM \"%s\" WHERE event_source = ? AND event_id BETWEEN ? AND ? ORDER BY event_id DESC LIMIT %d",
 		e.eventStoreTable, *FixPaginationLimit(limit))
 
 	params := &dynamodb.ExecuteStatementInput{
