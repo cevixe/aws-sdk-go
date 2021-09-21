@@ -8,8 +8,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
-	util2 "github.com/cevixe/aws-sdk-go/aws/util"
+	"github.com/cevixe/aws-sdk-go/aws/util"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -39,8 +38,8 @@ func NewDefaultSnsEventBus(awsFactory factory.AwsFactory) model.AwsEventBus {
 
 func (e eventBusImpl) PublishEvent(ctx context.Context, event *model.AwsEventRecord) {
 
-	messageJson := util2.MarshalJsonString(map[string]interface{}{
-		"default": json.Marshall(event),
+	messageJson := util.MarshalJsonString(map[string]interface{}{
+		"default": util.MarshalJsonString(event),
 	})
 
 	var input = &sns.PublishInput{
