@@ -1,7 +1,9 @@
 package sqs
 
 import (
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/cevixe/aws-sdk-go/aws/util"
 	"github.com/pkg/errors"
 	"reflect"
@@ -16,11 +18,12 @@ func UnmarshallSQSEvent(sqsEvent events.SQSEvent, record interface{}) {
 
 	messages := make([]*map[string]interface{}, 0, len(sqsEvent.Records))
 	for _, sqsMessage := range sqsEvent.Records {
-		generic := &map[string]interface{}{}
-		snsMessage := &events.SNSEntity{}
-		util.UnmarshalJsonString(sqsMessage.Body, snsMessage)
-		util.UnmarshalJsonString(snsMessage.Message, generic)
-		messages = append(messages, generic)
+		generic := make(map[string]interface{})
+		snsMessage := events.SNSEntity{}
+		util.UnmarshalJsonString(sqsMessage.Body, &snsMessage)
+		fmt.Printf("message: %s\n", json.Marshall(snsMessage))
+		util.UnmarshalJsonString(snsMessage.Message, &generic)
+		messages = append(messages, &generic)
 	}
 
 	if len(messages) == 1 &&
