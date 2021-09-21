@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -11,6 +12,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/pkg/errors"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -222,29 +224,53 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 	}
 	beforeTimeStamp := beforeTime.Unix() / int64(time.Millisecond)
 
-	selectStatement := fmt.Sprintf(
-		"SELECT * FROM \"%s\".\"%s\" WHERE %s = ? AND %s BETWEEN ? AND ? ORDER BY %s DESC LIMIT %d",
-		e.eventStoreTable, index, pkName, skName, skName, *FixPaginationLimit(limit))
-
-	params := &dynamodb.ExecuteStatementInput{
-		Statement: aws.String(selectStatement),
-		NextToken: nextToken,
-		Parameters: []*dynamodb.AttributeValue{
-			MarshallDynamodbAttribute(pkValue),
-			MarshallDynamodbAttribute(afterTimeStamp),
-			MarshallDynamodbAttribute(beforeTimeStamp),
+	params := &dynamodb.QueryInput{
+		TableName:              aws.String(e.eventStoreTable),
+		IndexName:              aws.String(index),
+		KeyConditionExpression: aws.String("#pk = :pk AND #sk BETWEEN :after AND :before"),
+		ExpressionAttributeNames: map[string]*string{
+			"#pk": aws.String(pkName),
+			"#sk": aws.String(skName),
 		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":pk":     MarshallDynamodbAttribute(pkValue),
+			":after":  MarshallDynamodbAttribute(afterTimeStamp),
+			":before": MarshallDynamodbAttribute(beforeTimeStamp),
+		},
+		ScanIndexForward: aws.Bool(false),
+		Limit:            FixPaginationLimit(limit),
 	}
 
-	output, err := e.dynamodbClient.ExecuteStatementWithContext(ctx, params)
+	if nextToken != nil {
+		token, err := base64.StdEncoding.DecodeString(*nextToken)
+		if err != nil {
+			panic(errors.Wrapf(err, "cannot decode next token"))
+		}
+		timeStamp, err := strconv.ParseInt(string(token), 10, 64)
+		if err != nil {
+			panic(errors.Wrapf(err, "invalid next token value"))
+		}
+		params.ExclusiveStartKey = map[string]*dynamodb.AttributeValue{
+			pkName: MarshallDynamodbAttribute(pkValue),
+			skName: MarshallDynamodbAttribute(timeStamp),
+		}
+	}
+
+	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
 		panic(errors.Wrapf(err, "cannot get event page"))
+	}
+
+	var newNextToken *string
+	if output.LastEvaluatedKey != nil {
+		timeStamp := *output.LastEvaluatedKey[skName].N
+		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(timeStamp)))
 	}
 
 	if len(output.Items) == 0 {
 		return &model.AwsEventRecordPage{
 			Items:     make([]*model.AwsEventRecord, 0),
-			NextToken: output.NextToken,
+			NextToken: newNextToken,
 		}
 	}
 
@@ -253,7 +279,7 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 
 	return &model.AwsEventRecordPage{
 		Items:     records,
-		NextToken: output.NextToken,
+		NextToken: newNextToken,
 	}
 }
 
@@ -270,30 +296,49 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 		beforeToken = *before
 	}
 
-	selectStatement := fmt.Sprintf(
-		"SELECT event_source, event_id, event_class, event_type, event_time, event_day, event_author "+
-			"FROM \"%s\" WHERE event_source = ? AND event_id BETWEEN ? AND ? ORDER BY event_id DESC LIMIT %d",
-		e.eventStoreTable, *FixPaginationLimit(limit))
-
-	params := &dynamodb.ExecuteStatementInput{
-		Statement: aws.String(selectStatement),
-		NextToken: nextToken,
-		Parameters: []*dynamodb.AttributeValue{
-			MarshallDynamodbAttribute(source),
-			MarshallDynamodbAttribute(afterToken),
-			MarshallDynamodbAttribute(beforeToken),
+	params := &dynamodb.QueryInput{
+		TableName:              aws.String(e.eventStoreTable),
+		ProjectionExpression:   aws.String("event_source,event_id,event_class,event_type,event_time,event_day,event_author"),
+		KeyConditionExpression: aws.String("#pk = :pk AND #sk BETWEEN :after AND :before"),
+		ExpressionAttributeNames: map[string]*string{
+			"#pk": aws.String("event_source"),
+			"#sk": aws.String("event_id"),
 		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":pk":     MarshallDynamodbAttribute(source),
+			":after":  MarshallDynamodbAttribute(afterToken),
+			":before": MarshallDynamodbAttribute(beforeToken),
+		},
+		ScanIndexForward: aws.Bool(false),
+		Limit:            FixPaginationLimit(limit),
 	}
 
-	output, err := e.dynamodbClient.ExecuteStatementWithContext(ctx, params)
+	if nextToken != nil {
+		eventId, err := base64.StdEncoding.DecodeString(*nextToken)
+		if err != nil {
+			panic(errors.Wrapf(err, "cannot decode next token"))
+		}
+		params.ExclusiveStartKey = map[string]*dynamodb.AttributeValue{
+			"event_source": MarshallDynamodbAttribute(source),
+			"event_id":     MarshallDynamodbAttribute(string(eventId)),
+		}
+	}
+
+	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
 		panic(errors.Wrapf(err, "cannot get event header page"))
+	}
+
+	var newNextToken *string
+	if output.LastEvaluatedKey != nil {
+		eventId := *output.LastEvaluatedKey["event_id"].S
+		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(eventId)))
 	}
 
 	if len(output.Items) == 0 {
 		return &model.AwsEventHeaderRecordPage{
 			Items:     make([]*model.AwsEventHeaderRecord, 0),
-			NextToken: output.NextToken,
+			NextToken: newNextToken,
 		}
 	}
 
@@ -302,7 +347,7 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 
 	return &model.AwsEventHeaderRecordPage{
 		Items:     records,
-		NextToken: output.NextToken,
+		NextToken: newNextToken,
 	}
 }
 

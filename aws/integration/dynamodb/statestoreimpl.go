@@ -2,7 +2,7 @@ package dynamodb
 
 import (
 	"context"
-	"fmt"
+	"encoding/base64"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -115,28 +115,53 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 		afterTime = *after
 	}
 	unixTime := afterTime.Unix() / int64(time.Millisecond)
-	selectStatement := fmt.Sprintf(
-		"SELECT * FROM \"%s\".\"%s\" WHERE type = ? AND updated_at >= ? ORDER BY updated_at DESC LIMIT %d",
-		s.stateStoreTableName, s.stateStoreIndexByTime, *FixPaginationLimit(limit))
 
-	params := &dynamodb.ExecuteStatementInput{
-		Statement: aws.String(selectStatement),
-		NextToken: nextToken,
-		Parameters: []*dynamodb.AttributeValue{
-			{S: aws.String(typ)},
-			{N: aws.String(strconv.FormatInt(unixTime, 64))},
+	params := &dynamodb.QueryInput{
+		TableName:              aws.String(s.stateStoreTableName),
+		IndexName:              aws.String(s.stateStoreIndexByTime),
+		KeyConditionExpression: aws.String("#pk = :pk AND #sk >= :after"),
+		ExpressionAttributeNames: map[string]*string{
+			"#pk": aws.String("type"),
+			"#sk": aws.String("updated_at"),
 		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":pk":    MarshallDynamodbAttribute(typ),
+			":after": MarshallDynamodbAttribute(unixTime),
+		},
+		ScanIndexForward: aws.Bool(false),
+		Limit:            FixPaginationLimit(limit),
 	}
 
-	output, err := s.dynamodbClient.ExecuteStatementWithContext(ctx, params)
+	if nextToken != nil {
+		token, err := base64.StdEncoding.DecodeString(*nextToken)
+		if err != nil {
+			panic(errors.Wrapf(err, "cannot decode next token"))
+		}
+		timeStamp, err := strconv.ParseInt(string(token), 10, 64)
+		if err != nil {
+			panic(errors.Wrapf(err, "invalid next token value"))
+		}
+		params.ExclusiveStartKey = map[string]*dynamodb.AttributeValue{
+			"type":       MarshallDynamodbAttribute(typ),
+			"updated_at": MarshallDynamodbAttribute(timeStamp),
+		}
+	}
+
+	output, err := s.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
 		panic(errors.Wrapf(err, "cannot get state records"))
+	}
+
+	var newNextToken *string
+	if output.LastEvaluatedKey != nil {
+		timeStamp := *output.LastEvaluatedKey["updated_at"].N
+		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(timeStamp)))
 	}
 
 	if len(output.Items) == 0 {
 		return &model.AwsStateRecordPage{
 			Items:     make([]*model.AwsStateRecord, 0),
-			NextToken: output.NextToken,
+			NextToken: newNextToken,
 		}
 	}
 
@@ -145,6 +170,6 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 
 	return &model.AwsStateRecordPage{
 		Items:     records,
-		NextToken: output.NextToken,
+		NextToken: newNextToken,
 	}
 }
