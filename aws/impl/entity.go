@@ -26,11 +26,15 @@ func NewEntity(ctx context.Context,
 		if err != nil {
 			panic(errors.Wrap(err, "cannot get entity version"))
 		}
+		entityState := make(map[string]interface{})
+		if eventRecord.EntityState != nil {
+			entityState = *eventRecord.EntityState
+		}
 		stateRecordToSave = &model.AwsStateRecord{
 			Type:            *eventRecord.EntityType,
 			ID:              *eventRecord.EntityID,
 			Version:         entityVersion,
-			State:           *eventRecord.EntityState,
+			State:           entityState,
 			UpdatedAt:       *eventRecord.EventTime,
 			UpdatedBy:       *eventRecord.EventAuthor,
 			CreatedAt:       *eventRecord.EntityCreatedAt,

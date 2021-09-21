@@ -3,6 +3,8 @@ package impl
 import (
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/core-sdk-go/core"
+	"github.com/pkg/errors"
+	"strconv"
 	"time"
 )
 
@@ -11,11 +13,16 @@ type VersionImpl struct {
 }
 
 func (v VersionImpl) ID() uint64 {
-	panic("implement me")
+	entityVersion, err := strconv.ParseUint(*v.Record.EventID, 10, 64)
+	if err != nil {
+		panic(errors.Wrap(err, "cannot get entity version"))
+	}
+	return entityVersion
 }
 
 func (v VersionImpl) Time() time.Time {
-	panic("implement me")
+	timeStamp := *v.Record.EventTime * int64(time.Millisecond)
+	return time.Unix(0, timeStamp)
 }
 
 func NewVersion(record *model.AwsEventHeaderRecord) core.Version {

@@ -167,7 +167,7 @@ func toGenericData(object interface{}) *map[string]interface{} {
 	return payload
 }
 
-const RecordSizeLimit = 512
+const RecordSizeLimit = 960
 
 func compressEventRecord(ctx context.Context, record *model.AwsEventRecord) *model.AwsEventRecord {
 
