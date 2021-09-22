@@ -37,7 +37,7 @@ func NewDefaultDynamodbCounterStore(awsFactory factory.AwsFactory) model.AwsCoun
 	return NewDynamodbCounterStore(counterStoreTableName, dynamodbClient)
 }
 
-func (s counterStoreImpl) NewValue(ctx context.Context, category string, name string) uint64 {
+func (s counterStoreImpl) updateValue(ctx context.Context, category string, name string) (uint64, error) {
 
 	params := &dynamodb.UpdateItemInput{
 		TableName: aws.String(s.counterStoreTableName),
@@ -57,34 +57,7 @@ func (s counterStoreImpl) NewValue(ctx context.Context, category string, name st
 
 	output, err := s.dynamodbClient.UpdateItemWithContext(ctx, params)
 	if err != nil {
-		panic(errors.Wrap(err, "cannot update counter value"))
-	}
-
-	if len(output.Attributes) == 0 {
-		putParams := &dynamodb.PutItemInput{
-			TableName: aws.String(s.counterStoreTableName),
-			Item: map[string]*dynamodb.AttributeValue{
-				"category": MarshallDynamodbAttribute(category),
-				"name":     MarshallDynamodbAttribute(name),
-				"value":    MarshallDynamodbAttribute(1),
-			},
-			ConditionExpression: aws.String("attribute_not_exists(#pk) AND attribute_not_exists(#sk)"),
-			ExpressionAttributeNames: map[string]*string{
-				"#pk": aws.String("category"),
-				"#sk": aws.String("name"),
-			},
-		}
-		if _, err := s.dynamodbClient.PutItemWithContext(ctx, putParams); err != nil {
-			if ae, ok := err.(awserr.RequestFailure); ok && ae.Code() == "ConditionalCheckFailedException" {
-				output, err = s.dynamodbClient.UpdateItemWithContext(ctx, params)
-				if err != nil {
-					panic(errors.Wrap(err, "cannot update counter value"))
-				}
-			} else {
-				panic(errors.Wrap(err, "cannot initiate counter value"))
-			}
-		}
-		return 1
+		return 0, err
 	}
 
 	newCounterString := *output.Attributes["value"].N
@@ -92,7 +65,54 @@ func (s counterStoreImpl) NewValue(ctx context.Context, category string, name st
 	if err != nil {
 		panic(errors.Wrap(err, "cannot parse counter value"))
 	}
-	return newCounter
+	return newCounter, nil
+}
+
+func (s counterStoreImpl) initiateValue(ctx context.Context, category string, name string) (uint64, error) {
+
+	params := &dynamodb.PutItemInput{
+		TableName: aws.String(s.counterStoreTableName),
+		Item: map[string]*dynamodb.AttributeValue{
+			"category": MarshallDynamodbAttribute(category),
+			"name":     MarshallDynamodbAttribute(name),
+			"value":    MarshallDynamodbAttribute(1),
+		},
+		ConditionExpression: aws.String("attribute_not_exists(#pk) AND attribute_not_exists(#sk)"),
+		ExpressionAttributeNames: map[string]*string{
+			"#pk": aws.String("category"),
+			"#sk": aws.String("name"),
+		},
+	}
+
+	_, err := s.dynamodbClient.PutItemWithContext(ctx, params)
+	if err != nil {
+		return 0, err
+	}
+
+	return 1, nil
+}
+
+func (s counterStoreImpl) NewValue(ctx context.Context, category string, name string) uint64 {
+
+	value, err := s.updateValue(ctx, category, name)
+	if err != nil {
+		if ae, ok := err.(awserr.RequestFailure); ok && ae.Code() == "ValidationException" {
+			value, err = s.initiateValue(ctx, category, name)
+			if err != nil {
+				if ae, ok := err.(awserr.RequestFailure); ok && ae.Code() == "ConditionalCheckFailedException" {
+					value, err = s.updateValue(ctx, category, name)
+					if err != nil {
+						panic(errors.Wrap(err, "cannot update counter value"))
+					}
+				} else {
+					panic(errors.Wrap(err, "cannot initiate counter value"))
+				}
+			}
+		} else {
+			panic(errors.Wrap(err, "cannot update counter value"))
+		}
+	}
+	return value
 }
 
 func (s counterStoreImpl) GetValue(ctx context.Context, category string, name string) uint64 {
