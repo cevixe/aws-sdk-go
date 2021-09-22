@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/http"
 	"github.com/cevixe/aws-sdk-go/aws/impl"
@@ -12,9 +11,6 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/integration/session"
 	"github.com/cevixe/aws-sdk-go/aws/integration/sns"
 	"github.com/cevixe/core-sdk-go/cevixe"
-	"github.com/pkg/errors"
-	"os"
-	"strconv"
 )
 
 func NewContext() context.Context {
