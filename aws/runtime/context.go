@@ -36,15 +36,7 @@ func configureAwsContext(ctx context.Context) context.Context {
 	awsEventBus := sns.NewDefaultSnsEventBus(awsFactory)
 	awsGraphqlGateway := appsync.NewDefaultAppsyncGateway(sessionFactory)
 
-	awsHandlerTimeoutString := os.Getenv(env.AwsLambdaFunctionTimeout)
-	awsHandlerTimeout, err := strconv.ParseUint(awsHandlerTimeoutString, 10, 64)
-	if err != nil {
-		panic(errors.Wrap(err, "cannot get handler timeout"))
-	}
 	awsContext := &impl.Context{
-		AwsHandlerID:      os.Getenv(env.AwsLambdaFunctionName),
-		AwsHandlerVersion: os.Getenv(env.AwsLambdaFunctionVersion),
-		AwsHandlerTimeout: awsHandlerTimeout,
 		AwsFactory:        awsFactory,
 		AwsObjectStore:    awsObjectStore,
 		AwsEventStore:     awsEventStore,
