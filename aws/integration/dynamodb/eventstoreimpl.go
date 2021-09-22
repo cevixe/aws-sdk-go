@@ -10,6 +10,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/pkg/errors"
 	"math"
 	"os"
@@ -255,6 +256,8 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 		}
 	}
 
+	fmt.Printf("params: %s", json.Marshall(params))
+
 	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
 		panic(errors.Wrapf(err, "cannot get event page"))
@@ -322,6 +325,8 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 			"event_id":     MarshallDynamodbAttribute(string(eventId)),
 		}
 	}
+
+	fmt.Printf("params: %s", json.Marshall(params))
 
 	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {

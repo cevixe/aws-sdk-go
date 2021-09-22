@@ -3,12 +3,14 @@ package dynamodb
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/pkg/errors"
 	"math"
 	"os"
@@ -146,6 +148,8 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 			"updated_at": MarshallDynamodbAttribute(timeStamp),
 		}
 	}
+
+	fmt.Printf("params: %s", json.Marshall(params))
 
 	output, err := s.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
