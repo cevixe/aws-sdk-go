@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stoewer/go-strcase"
+	"strconv"
 	"time"
 )
 
@@ -96,21 +97,24 @@ func newDefaultEvent(ctx context.Context, class core.EventClass, eventType strin
 		eventRecord.TriggerID = aws.String(triggerEvent.ID())
 	}
 
-	addEntityMetadata(class, id, entity, state, eventRecord)
+	addEntityMetadata(ctx, class, id, entity, state, eventRecord)
 	addEventIdentity(class, eventType, entity, state, eventRecord)
 	eventRecord = compressEventRecord(ctx, eventRecord)
 
 	return NewEvent(ctx, eventRecord)
 }
 
-func addEntityMetadata(class core.EventClass, id string, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
+func addEntityMetadata(ctx context.Context, class core.EventClass, id string, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
 
 	if class != core.DomainEvent {
 		return
 	}
 	if entity == nil {
 		if id == "" {
-			record.EntityID = aws.String(uuid.NewString())
+			awsContext := ctx.Value(AwsContext).(*Context)
+			counterStore := awsContext.AwsCounterStore
+			newID := counterStore.NewValue(ctx, util.GetTypeName(state))
+			record.EntityID = aws.String(strconv.FormatUint(newID, 10))
 		} else {
 			record.EntityID = aws.String(id)
 		}
@@ -124,6 +128,7 @@ func addEntityMetadata(class core.EventClass, id string, entity core.Entity, sta
 		record.EntityCreatedBy = aws.String(entity.CreatedBy())
 	}
 	record.EntityState = toGenericData(state)
+	record.EntityDeleted = state == nil
 }
 
 func addEventIdentity(class core.EventClass, typ string, entity core.Entity, state interface{}, record *model.AwsEventRecord) {

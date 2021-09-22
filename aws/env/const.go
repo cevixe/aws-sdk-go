@@ -17,6 +17,8 @@ const CevixeControlStoreTableName string = "CVX_CONTROL_STORE_NAME"
 const CevixeStateStoreTableName string = "CVX_STATE_STORE_NAME"
 const CevixeStateStoreIndexByTime string = "CVX_STATE_STORE_IDX_BY_TIME"
 
+const CevixeCounterStoreTableName string = "CVX_COUNTER_STORE_NAME"
+
 const CevixeObjectStoreBucketName string = "CVX_OBJECT_STORE_NAME"
 const CevixeEventBusTopicArn string = "CVX_EVENT_BUS_ARN"
 const CevixeGraphqlGatewayUrl string = "CVX_GRAPHQL_GATEWAY_URL"

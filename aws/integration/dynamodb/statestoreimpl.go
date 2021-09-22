@@ -48,7 +48,7 @@ func NewDefaultDynamodbStateStore(awsFactory factory.AwsFactory) model.AwsStateS
 }
 
 func (s stateStoreImpl) UpdateState(ctx context.Context, state *model.AwsStateRecord) {
-	if state.State == nil && state.Content == nil && state.ContentLocation == "" {
+	if state.Deleted {
 		input := &dynamodb.DeleteItemInput{
 			TableName: aws.String(s.stateStoreTableName),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -78,7 +78,7 @@ func (s stateStoreImpl) UpdateStates(ctx context.Context, states []*model.AwsSta
 	requests := make([]*dynamodb.WriteRequest, 0, len(states))
 	for _, item := range states {
 		var elem *dynamodb.WriteRequest
-		if item.State == nil && item.Content == nil && item.ContentLocation == "" {
+		if item.Deleted {
 			elem = &dynamodb.WriteRequest{
 				DeleteRequest: &dynamodb.DeleteRequest{
 					Key: map[string]*dynamodb.AttributeValue{

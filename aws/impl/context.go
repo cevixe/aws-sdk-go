@@ -16,5 +16,6 @@ type Context struct {
 	AwsEventStore     model.AwsEventStore
 	AwsEventBus       model.AwsEventBus
 	AwsStateStore     model.AwsStateStore
+	AwsCounterStore   model.AwsCounterStore
 	AwsGraphqlGateway model.AwsGraphqlGateway
 }

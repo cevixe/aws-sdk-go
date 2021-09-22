@@ -12,6 +12,7 @@ type AwsEventRecord struct {
 	EntityID        *string                 `json:"entity_id,omitempty"`
 	EntityType      *string                 `json:"entity_type,omitempty"`
 	EntityState     *map[string]interface{} `json:"entity_state,omitempty"`
+	EntityDeleted   bool                    `json:"entity_deleted,omitempty"`
 	EntityCreatedAt *int64                  `json:"entity_created_at,omitempty"`
 	EntityCreatedBy *string                 `json:"entity_created_by,omitempty"`
 	TriggerSource   *string                 `json:"trigger_source,omitempty"`

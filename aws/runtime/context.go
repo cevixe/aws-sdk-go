@@ -28,6 +28,7 @@ func configureAwsContext(ctx context.Context) context.Context {
 	awsObjectStore := s3.NewDefaultS3ObjectStore(awsFactory)
 	awsEventStore := dynamodb.NewDefaultDynamodbEventStore(awsFactory)
 	awsStateStore := dynamodb.NewDefaultDynamodbStateStore(awsFactory)
+	awsCounterStore := dynamodb.NewDefaultDynamodbCounterStore(awsFactory)
 	awsEventBus := sns.NewDefaultSnsEventBus(awsFactory)
 	awsGraphqlGateway := appsync.NewDefaultAppsyncGateway(sessionFactory)
 
@@ -37,6 +38,7 @@ func configureAwsContext(ctx context.Context) context.Context {
 		AwsEventStore:     awsEventStore,
 		AwsEventBus:       awsEventBus,
 		AwsStateStore:     awsStateStore,
+		AwsCounterStore:   awsCounterStore,
 		AwsGraphqlGateway: awsGraphqlGateway,
 	}
 
