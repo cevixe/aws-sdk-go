@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"context"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
@@ -43,7 +44,10 @@ func (s counterStoreImpl) NewValue(ctx context.Context, category string) uint64 
 		Key: map[string]*dynamodb.AttributeValue{
 			"category": MarshallDynamodbAttribute(category),
 		},
-		UpdateExpression: aws.String("SET counter = counter + :incr"),
+		UpdateExpression: aws.String("SET #counter = #counter + :incr"),
+		ExpressionAttributeNames: map[string]*string{
+			"#counter": aws.String("counter"),
+		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":incr": MarshallDynamodbAttribute(1),
 		},
@@ -56,7 +60,29 @@ func (s counterStoreImpl) NewValue(ctx context.Context, category string) uint64 
 	}
 
 	if len(output.Attributes) == 0 {
-		panic(errors.Wrap(err, "counter category not exists"))
+		putParams := &dynamodb.PutItemInput{
+			TableName: aws.String(s.counterStoreTableName),
+			Item: map[string]*dynamodb.AttributeValue{
+				"category": MarshallDynamodbAttribute(category),
+				"counter":  MarshallDynamodbAttribute(1),
+			},
+			ConditionExpression: aws.String("attribute_not_exists(#pk) AND attribute_not_exists(#sk)"),
+			ExpressionAttributeNames: map[string]*string{
+				"#pk": aws.String("category"),
+				"#sk": aws.String("counter"),
+			},
+		}
+		if _, err := s.dynamodbClient.PutItemWithContext(ctx, putParams); err != nil {
+			if ae, ok := err.(awserr.RequestFailure); ok && ae.Code() == "ConditionalCheckFailedException" {
+				output, err = s.dynamodbClient.UpdateItemWithContext(ctx, params)
+				if err != nil {
+					panic(errors.Wrap(err, "cannot update category counter"))
+				}
+			} else {
+				panic(errors.Wrap(err, "cannot initiate category counter"))
+			}
+		}
+		return 1
 	}
 
 	newCounterString := *output.Attributes["counter"].N
@@ -71,7 +97,10 @@ func (s counterStoreImpl) GetValue(ctx context.Context, category string) uint64 
 
 	params := &dynamodb.QueryInput{
 		TableName:              aws.String(s.counterStoreTableName),
-		KeyConditionExpression: aws.String("category = :category"),
+		KeyConditionExpression: aws.String("#category = :category"),
+		ExpressionAttributeNames: map[string]*string{
+			"#category": aws.String("category"),
+		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":category": MarshallDynamodbAttribute(category),
 		},
@@ -83,7 +112,7 @@ func (s counterStoreImpl) GetValue(ctx context.Context, category string) uint64 
 	}
 
 	if len(output.Items) == 0 {
-		panic(errors.Wrap(err, "category counter not found"))
+		return 0
 	}
 
 	counterString := *output.Items[0]["counter"].N
