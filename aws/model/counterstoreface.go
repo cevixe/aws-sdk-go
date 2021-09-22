@@ -5,6 +5,6 @@ import (
 )
 
 type AwsCounterStore interface {
-	GetValue(ctx context.Context, category string) uint64
-	NewValue(ctx context.Context, category string) uint64
+	GetValue(ctx context.Context, category string, name string) uint64
+	NewValue(ctx context.Context, category string, name string) uint64
 }
