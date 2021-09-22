@@ -13,14 +13,14 @@ import (
 func HandleRecovery(ctx context.Context, err interface{}, controlRecord *model.AwsControlRecord) {
 	if err != nil {
 		factory := ctx.Value(cevixe.CevixeEventFactory).(core.EventFactory)
+		transaction := ctx.Value(cevixe.CevixeTransaction).(string)
 		awsContext := ctx.Value(impl.AwsContext).(*impl.Context)
 
 		buf := make([]byte, 1<<16)
 		stackSize := runtime.Stack(buf, true)
 		errorStack := string(buf[0:stackSize])
 
-		log.Printf("Internal error: %v", err)
-		log.Printf("%s\n", string(buf[0:stackSize]))
+		log.Printf("Internal error(%s): %v", transaction, err)
 
 		newEvent := factory.NewSystemEvent(ctx, core.EventHandlingFailed{
 			Handler:    awsContext.AwsHandlerID,
