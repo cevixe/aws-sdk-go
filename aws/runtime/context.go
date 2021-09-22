@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/http"
 	"github.com/cevixe/aws-sdk-go/aws/impl"
@@ -11,6 +12,9 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/integration/session"
 	"github.com/cevixe/aws-sdk-go/aws/integration/sns"
 	"github.com/cevixe/core-sdk-go/cevixe"
+	"log"
+	"os"
+	"strconv"
 )
 
 func NewContext() context.Context {
@@ -19,6 +23,8 @@ func NewContext() context.Context {
 	ctx = configureCevixeContext(ctx)
 	return ctx
 }
+
+const DefaultHandlerTimeout uint64 = 5000
 
 func configureAwsContext(ctx context.Context) context.Context {
 
@@ -31,8 +37,18 @@ func configureAwsContext(ctx context.Context) context.Context {
 	awsCounterStore := dynamodb.NewDefaultDynamodbCounterStore(awsFactory)
 	awsEventBus := sns.NewDefaultSnsEventBus(awsFactory)
 	awsGraphqlGateway := appsync.NewDefaultAppsyncGateway(sessionFactory)
+	awsHandlerTimeoutString := os.Getenv(env.AwsLambdaFunctionTimeout)
+	awsHandlerTimeoutMs := DefaultHandlerTimeout
+	awsHandlerTimeout, err := strconv.ParseUint(awsHandlerTimeoutString, 10, 64)
+	if err != nil {
+		log.Printf("cannot get handler timeout: %v\n", err)
+		awsHandlerTimeoutMs = awsHandlerTimeout * 1000
+	}
 
 	awsContext := &impl.Context{
+		AwsHandlerID:      os.Getenv(env.AwsLambdaFunctionName),
+		AwsHandlerVersion: os.Getenv(env.AwsLambdaFunctionVersion),
+		AwsHandlerTimeout: awsHandlerTimeoutMs,
 		AwsFactory:        awsFactory,
 		AwsObjectStore:    awsObjectStore,
 		AwsEventStore:     awsEventStore,
