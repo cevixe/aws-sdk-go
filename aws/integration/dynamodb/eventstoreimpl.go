@@ -10,7 +10,6 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/pkg/errors"
 	"math"
 	"os"
@@ -216,12 +215,12 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 
 	afterTimeStamp := int64(math.MinInt64)
 	if after != nil {
-		afterTimeStamp = after.Unix() / int64(time.Millisecond)
+		afterTimeStamp = after.UnixNano() / int64(time.Millisecond)
 	}
 
 	beforeTimeStamp := int64(math.MaxInt64)
 	if before != nil {
-		beforeTimeStamp = before.Unix() / int64(time.Millisecond)
+		beforeTimeStamp = before.UnixNano() / int64(time.Millisecond)
 	}
 
 	params := &dynamodb.QueryInput{
@@ -255,8 +254,6 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 			skName: MarshallDynamodbAttribute(timeStamp),
 		}
 	}
-
-	fmt.Printf("params: %s", json.Marshall(params))
 
 	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
@@ -325,8 +322,6 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 			"event_id":     MarshallDynamodbAttribute(string(eventId)),
 		}
 	}
-
-	fmt.Printf("params: %s", json.Marshall(params))
 
 	output, err := e.dynamodbClient.QueryWithContext(ctx, params)
 	if err != nil {
