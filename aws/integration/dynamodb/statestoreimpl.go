@@ -10,6 +10,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/pkg/errors"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -110,11 +111,10 @@ func (s stateStoreImpl) UpdateStates(ctx context.Context, states []*model.AwsSta
 
 func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.Time, nextToken *string, limit *int64) *model.AwsStateRecordPage {
 
-	var afterTime time.Time
+	afterTimeStamp := int64(math.MinInt64)
 	if after != nil {
-		afterTime = *after
+		afterTimeStamp = after.Unix() / int64(time.Millisecond)
 	}
-	unixTime := afterTime.Unix() / int64(time.Millisecond)
 
 	params := &dynamodb.QueryInput{
 		TableName:              aws.String(s.stateStoreTableName),
@@ -126,7 +126,7 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":pk":    MarshallDynamodbAttribute(typ),
-			":after": MarshallDynamodbAttribute(unixTime),
+			":after": MarshallDynamodbAttribute(afterTimeStamp),
 		},
 		ScanIndexForward: aws.Bool(false),
 		Limit:            FixPaginationLimit(limit),

@@ -11,6 +11,7 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/pkg/errors"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -212,17 +213,15 @@ func (e eventStoreImpl) GetLastEventRecord(ctx context.Context, source string) *
 func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName string, skName string, pkValue interface{},
 	after *time.Time, before *time.Time, nextToken *string, limit *int64) *model.AwsEventRecordPage {
 
-	var afterTime time.Time
+	afterTimeStamp := int64(math.MinInt64)
 	if after != nil {
-		afterTime = *after
+		afterTimeStamp = after.Unix() / int64(time.Millisecond)
 	}
-	afterTimeStamp := afterTime.Unix() / int64(time.Millisecond)
 
-	beforeTime := time.Now()
+	beforeTimeStamp := int64(math.MaxInt64)
 	if before != nil {
-		beforeTime = *before
+		beforeTimeStamp = before.Unix() / int64(time.Millisecond)
 	}
-	beforeTimeStamp := beforeTime.Unix() / int64(time.Millisecond)
 
 	params := &dynamodb.QueryInput{
 		TableName:              aws.String(e.eventStoreTable),

@@ -83,7 +83,7 @@ func newDefaultEvent(ctx context.Context, class core.EventClass, eventType strin
 	eventRecord := &model.AwsEventRecord{
 		EventClass:  aws.String(string(class)),
 		EventType:   aws.String(eventType),
-		EventDay:    aws.String(eventTime.Format("YYYY-MM-DD")),
+		EventDay:    aws.String(eventTime.Format("2006-01-02")),
 		EventTime:   aws.Int64(eventTimeStamp),
 		EventAuthor: aws.String(userID),
 		EventData:   toGenericData(data),
@@ -97,7 +97,7 @@ func newDefaultEvent(ctx context.Context, class core.EventClass, eventType strin
 	}
 
 	addEntityMetadata(class, id, entity, state, eventRecord)
-	addEventIdentity(class, data, entity, state, eventRecord)
+	addEventIdentity(class, eventType, entity, state, eventRecord)
 	eventRecord = compressEventRecord(ctx, eventRecord)
 
 	return NewEvent(ctx, eventRecord)
@@ -126,11 +126,11 @@ func addEntityMetadata(class core.EventClass, id string, entity core.Entity, sta
 	record.EntityState = toGenericData(state)
 }
 
-func addEventIdentity(class core.EventClass, data interface{}, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
+func addEventIdentity(class core.EventClass, typ string, entity core.Entity, state interface{}, record *model.AwsEventRecord) {
 
 	switch class {
 	case core.CommandEvent:
-		dataTypeName := strcase.KebabCase(util.GetTypeName(data))
+		dataTypeName := strcase.KebabCase(typ)
 		record.EventSource = aws.String("/command/" + dataTypeName)
 		record.EventID = aws.String(uuid.NewString())
 		break
@@ -146,12 +146,12 @@ func addEventIdentity(class core.EventClass, data interface{}, entity core.Entit
 		}
 		break
 	case core.BusinessEvent:
-		dataTypeName := strcase.KebabCase(util.GetTypeName(data))
+		dataTypeName := strcase.KebabCase(typ)
 		record.EventSource = aws.String("/business/" + dataTypeName)
 		record.EventID = aws.String(uuid.NewString())
 		break
 	case core.SystemEvent:
-		dataTypeName := strcase.KebabCase(util.GetTypeName(data))
+		dataTypeName := strcase.KebabCase(typ)
 		record.EventSource = aws.String("/system/" + dataTypeName)
 		record.EventID = aws.String(uuid.NewString())
 		break
