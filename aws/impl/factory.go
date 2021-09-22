@@ -113,7 +113,9 @@ func addEntityMetadata(ctx context.Context, class core.EventClass, id string, en
 		if id == "" {
 			awsContext := ctx.Value(AwsContext).(*Context)
 			counterStore := awsContext.AwsCounterStore
-			newID := counterStore.NewValue(ctx, util.GetTypeName(state))
+			category := "domain"
+			name := strcase.KebabCase(util.GetTypeName(state))
+			newID := counterStore.NewValue(ctx, category, name)
 			record.EntityID = aws.String(strconv.FormatUint(newID, 10))
 		} else {
 			record.EntityID = aws.String(id)
