@@ -22,9 +22,6 @@ func (s stateStoreImpl) GetLastVersion(ctx context.Context, typ string, id strin
 		return nil
 	}
 	entity := NewEvent(ctx, event).Entity()
-	if entity.(*EntityImpl).StateRecord.Deleted {
-		return nil
-	}
 	return entity
 }
 
@@ -35,9 +32,6 @@ func (s stateStoreImpl) GetByVersion(ctx context.Context, typ string, id string,
 		return nil
 	}
 	entity := NewEvent(ctx, event).Entity()
-	if entity.(*EntityImpl).StateRecord.Deleted {
-		return nil
-	}
 	return entity
 }
 
