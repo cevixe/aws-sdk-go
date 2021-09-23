@@ -301,12 +301,22 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 
 	params := &dynamodb.QueryInput{
 		TableName:              aws.String(e.eventStoreTable),
-		ProjectionExpression:   aws.String("event_source,event_id,event_class,event_type,event_time,event_day,event_author," +
-			"entity_id,entity_type,entity_deleted,transaction,trigger_source,trigger_id"),
+		ProjectionExpression:   aws.String("#pk,#sk,#class,#type,#at,#by,#day,#eid,#etype,#edeleted,#trx,#tsrc,#tid"),
 		KeyConditionExpression: aws.String("#pk = :pk AND #sk BETWEEN :after AND :before"),
 		ExpressionAttributeNames: map[string]*string{
-			"#pk": aws.String("event_source"),
-			"#sk": aws.String("event_id"),
+			"#pk":       aws.String("event_source"),
+			"#sk":       aws.String("event_id"),
+			"#class":    aws.String("event_class"),
+			"#type":     aws.String("event_type"),
+			"#at":       aws.String("event_time"),
+			"#by":       aws.String("event_author"),
+			"#day":      aws.String("event_day"),
+			"#eid":      aws.String("entity_id"),
+			"#etype":    aws.String("entity_type"),
+			"#edeleted": aws.String("entity_deleted"),
+			"#trx":      aws.String("transaction"),
+			"#tsrc":     aws.String("trigger_source"),
+			"#tid":      aws.String("trigger_id"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":pk":     MarshallDynamodbAttribute(source),
