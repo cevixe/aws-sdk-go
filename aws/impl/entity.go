@@ -20,8 +20,10 @@ func NewEntity(ctx context.Context,
 	stateRecord *model.AwsStateRecord,
 	eventRecord *model.AwsEventRecord) core.Entity {
 
-	stateRecordToSave := stateRecord
-	if eventRecord != nil && core.EventClass(*eventRecord.EventClass) == core.DomainEvent {
+	if eventRecord != nil {
+		if eventRecord.EntityDeleted {
+			return nil
+		}
 		entityVersion, err := strconv.ParseUint(*eventRecord.EventID, 10, 64)
 		if err != nil {
 			panic(errors.Wrap(err, "cannot get entity version"))
@@ -30,28 +32,35 @@ func NewEntity(ctx context.Context,
 		if eventRecord.EntityState != nil {
 			entityState = *eventRecord.EntityState
 		}
-		stateRecordToSave = &model.AwsStateRecord{
-			Type:            *eventRecord.EntityType,
-			ID:              *eventRecord.EntityID,
-			Version:         entityVersion,
-			Deleted:         eventRecord.EntityDeleted,
-			State:           entityState,
-			UpdatedAt:       *eventRecord.EventTime,
-			UpdatedBy:       *eventRecord.EventAuthor,
-			CreatedAt:       *eventRecord.EntityCreatedAt,
-			CreatedBy:       *eventRecord.EntityCreatedBy,
-			ContentLocation: eventRecord.ContentLocation,
-			ContentType:     eventRecord.ContentType,
-			ContentEncoding: eventRecord.ContentEncoding,
-			Content:         eventRecord.Content,
-		}
-	} else if stateRecord != nil {
 		return &EntityImpl{
-			Context:     ctx,
-			StateRecord: stateRecordToSave,
-			EventRecord: eventRecord,
+			Context: ctx,
+			StateRecord: &model.AwsStateRecord{
+				Type:            *eventRecord.EntityType,
+				ID:              *eventRecord.EntityID,
+				Version:         entityVersion,
+				Deleted:         eventRecord.EntityDeleted,
+				State:           entityState,
+				UpdatedAt:       *eventRecord.EventTime,
+				UpdatedBy:       *eventRecord.EventAuthor,
+				CreatedAt:       *eventRecord.EntityCreatedAt,
+				CreatedBy:       *eventRecord.EntityCreatedBy,
+				ContentLocation: eventRecord.ContentLocation,
+				ContentType:     eventRecord.ContentType,
+				ContentEncoding: eventRecord.ContentEncoding,
+				Content:         eventRecord.Content,
+			},
+			EventRecord: nil,
 		}
 	}
+
+	if stateRecord != nil {
+		return &EntityImpl{
+			Context:     ctx,
+			StateRecord: stateRecord,
+			EventRecord: nil,
+		}
+	}
+
 	return nil
 }
 
