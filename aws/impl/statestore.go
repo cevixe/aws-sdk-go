@@ -21,7 +21,11 @@ func (s stateStoreImpl) GetLastVersion(ctx context.Context, typ string, id strin
 	if event == nil {
 		return nil
 	}
-	return NewEvent(ctx, event).Entity()
+	entity := NewEvent(ctx, event).Entity()
+	if entity.(*EntityImpl).StateRecord.Deleted {
+		return nil
+	}
+	return entity
 }
 
 func (s stateStoreImpl) GetByVersion(ctx context.Context, typ string, id string, version uint64) core.Entity {
@@ -30,7 +34,11 @@ func (s stateStoreImpl) GetByVersion(ctx context.Context, typ string, id string,
 	if event == nil {
 		return nil
 	}
-	return NewEvent(ctx, event).Entity()
+	entity := NewEvent(ctx, event).Entity()
+	if entity.(*EntityImpl).StateRecord.Deleted {
+		return nil
+	}
+	return entity
 }
 
 func (s stateStoreImpl) GetVersions(ctx context.Context, typ string, id string,

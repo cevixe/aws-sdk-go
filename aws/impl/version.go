@@ -25,6 +25,13 @@ func (v VersionImpl) Time() time.Time {
 	return time.Unix(0, timeStamp)
 }
 
+func (v VersionImpl) Author() string {
+	return *v.Record.EventAuthor
+}
+
 func NewVersion(record *model.AwsEventHeaderRecord) core.Version {
+	if record.EntityDeleted {
+		return nil
+	}
 	return &VersionImpl{Record: record}
 }

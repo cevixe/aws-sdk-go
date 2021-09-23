@@ -21,7 +21,7 @@ func NewEntity(ctx context.Context,
 	eventRecord *model.AwsEventRecord) core.Entity {
 
 	stateRecordToSave := stateRecord
-	if eventRecord != nil {
+	if eventRecord != nil && core.EventClass(*eventRecord.EventClass) == core.DomainEvent {
 		entityVersion, err := strconv.ParseUint(*eventRecord.EventID, 10, 64)
 		if err != nil {
 			panic(errors.Wrap(err, "cannot get entity version"))
@@ -45,12 +45,14 @@ func NewEntity(ctx context.Context,
 			ContentEncoding: eventRecord.ContentEncoding,
 			Content:         eventRecord.Content,
 		}
+	} else if stateRecord != nil {
+		return &EntityImpl{
+			Context:     ctx,
+			StateRecord: stateRecordToSave,
+			EventRecord: eventRecord,
+		}
 	}
-	return &EntityImpl{
-		Context:     ctx,
-		StateRecord: stateRecordToSave,
-		EventRecord: eventRecord,
-	}
+	return nil
 }
 
 func (e EntityImpl) ID() string {

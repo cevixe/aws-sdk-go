@@ -177,6 +177,10 @@ func (e eventStoreImpl) GetEventRecordByID(ctx context.Context, source string, i
 		panic(errors.Wrap(err, "cannot get event record by id"))
 	}
 
+	if output.Item == nil {
+		return nil
+	}
+
 	record := &model.AwsEventRecord{}
 	UnmarshallDynamodbItem(output.Item, record)
 	return record
@@ -297,7 +301,8 @@ func (e eventStoreImpl) GetEventHeaders(ctx context.Context, source string,
 
 	params := &dynamodb.QueryInput{
 		TableName:              aws.String(e.eventStoreTable),
-		ProjectionExpression:   aws.String("event_source,event_id,event_class,event_type,event_time,event_day,event_author"),
+		ProjectionExpression:   aws.String("event_source,event_id,event_class,event_type,event_time,event_day,event_author," +
+			"entity_id,entity_type,entity_deleted,transaction,trigger_source,trigger_id"),
 		KeyConditionExpression: aws.String("#pk = :pk AND #sk BETWEEN :after AND :before"),
 		ExpressionAttributeNames: map[string]*string{
 			"#pk": aws.String("event_source"),

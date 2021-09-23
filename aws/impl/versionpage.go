@@ -12,6 +12,9 @@ type VersionPageImpl struct {
 func (e VersionPageImpl) Items() []core.Version {
 	items := make([]core.Version, 0)
 	for idx, _ := range e.Record.Items {
+		if e.Record.Items[idx].EntityDeleted {
+			continue
+		}
 		items = append(items, NewVersion(e.Record.Items[idx]))
 	}
 	return items

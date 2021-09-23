@@ -14,6 +14,9 @@ type EventImpl struct {
 }
 
 func NewEvent(ctx context.Context, record *model.AwsEventRecord) core.Event {
+	if record == nil {
+		return nil
+	}
 	return &EventImpl{
 		Ctx:    ctx,
 		Record: record,
