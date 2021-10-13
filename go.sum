@@ -17,8 +17,8 @@ github.com/aws/aws-xray-sdk-go v1.6.0 h1:w4dPTvHZtbQg3dQFTRTu4TIunlfJCRGKdmGYZkc
 github.com/aws/aws-xray-sdk-go v1.6.0/go.mod h1:k+NuTgdU+z07L3l8lnGHK+/luqe8TKmZJNpQAoVfLeY=
 github.com/aws/smithy-go v1.4.0/go.mod h1:SObp3lf9smib00L/v3U2eAKG8FyQ7iLrJnQiAmR5n+E=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/cevixe/core-sdk-go v0.12.0 h1:iQADIGLZqTI15fruXp3xSJUrGbAT/juM6ZiksJUWmXk=
-github.com/cevixe/core-sdk-go v0.12.0/go.mod h1:cmFA/qyd0nwTv3uaQRoYowd+xfiKqQtsPIJuG8Qht2I=
+github.com/cevixe/core-sdk-go v0.12.1 h1:ixFNKKeOiQYNhrWD/EqXNpNZUB2bDVBuoVsGZWJKaNY=
+github.com/cevixe/core-sdk-go v0.12.1/go.mod h1:3LJnRqoSLz1T5KS3wo2bfIkhBp+O5nkyStTytWim1gg=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
@@ -187,7 +187,6 @@ google.golang.org/protobuf v1.23.1-0.20200526195155-81db48ad09cc/go.mod h1:EGpAD
 google.golang.org/protobuf v1.24.0/go.mod h1:r/3tXBNzIEhYS9I1OUVjXDlt8tc493IdKGjtUeSXeh4=
 google.golang.org/protobuf v1.25.0 h1:Ejskq+SyPohKW+1uil0JJMtmHCgJPJ/qWTxr8qp+R4c=
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
-gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
