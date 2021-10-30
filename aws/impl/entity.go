@@ -2,7 +2,6 @@ package impl
 
 import (
 	"context"
-	"fmt"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/aws-sdk-go/aws/util"
 	"github.com/cevixe/core-sdk-go/core"
@@ -78,13 +77,11 @@ func (e EntityImpl) Version() uint64 {
 }
 
 func (e *EntityImpl) State(v interface{}) {
-	if e.StateRecord.State != nil {
-		fmt.Println("State case")
+	if e.StateRecord.State != nil && len(e.StateRecord.State) > 0 {
 		json := util.MarshalJson(e.StateRecord.State)
 		util.UnmarshalJson(json, v)
 	} else {
 		if e.EventRecord == nil {
-			fmt.Println("State store case")
 			e.EventRecord = GetEventContent(
 				e.Context,
 				e.StateRecord.ContentLocation,
@@ -92,7 +89,6 @@ func (e *EntityImpl) State(v interface{}) {
 				e.StateRecord.ContentType,
 				e.StateRecord.Content)
 		} else if e.EventRecord.EventData == nil {
-			fmt.Println("Event record case")
 			e.EventRecord = GetEventContent(
 				e.Context,
 				e.EventRecord.ContentLocation,
