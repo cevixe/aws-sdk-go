@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"fmt"
 	"github.com/cevixe/aws-sdk-go/aws/model"
 	"github.com/cevixe/aws-sdk-go/aws/serdes/gzip"
 	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
@@ -22,9 +23,11 @@ func GetContent(
 	}
 
 	if contentEncoding == "gzip" {
+		fmt.Printf("gzip data:%s\n", data)
 		return gzip.Decompress(data)
 	}
 	if contentEncoding == "identity" || contentEncoding == "" {
+		fmt.Printf("identity data:%s\n", data)
 		return data
 	}
 
@@ -43,6 +46,7 @@ func GetEventContent(
 	if contentType == "application/json" || contentType == "" {
 		record := &model.AwsEventRecord{}
 		json.Unmarshall(data, record)
+		fmt.Println(json.Marshall(content))
 		return record
 	}
 
