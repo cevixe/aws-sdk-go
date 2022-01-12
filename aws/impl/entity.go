@@ -21,9 +21,6 @@ func NewEntity(ctx context.Context,
 	eventRecord *model.AwsEventRecord) core.Entity {
 
 	if eventRecord != nil {
-		if eventRecord.EntityDeleted {
-			return nil
-		}
 		entityVersion, err := strconv.ParseUint(*eventRecord.EventID, 10, 64)
 		if err != nil {
 			panic(errors.Wrap(err, "cannot get entity version"))
@@ -117,4 +114,8 @@ func (e EntityImpl) CreatedAt() time.Time {
 
 func (e EntityImpl) CreatedBy() string {
 	return e.StateRecord.CreatedBy
+}
+
+func (e EntityImpl) IsDeleted() bool {
+	return e.StateRecord.Deleted
 }
