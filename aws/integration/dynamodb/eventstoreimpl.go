@@ -14,6 +14,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -249,13 +250,15 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 		if err != nil {
 			panic(errors.Wrapf(err, "cannot decode next token"))
 		}
-		timeStamp, err := strconv.ParseInt(string(token), 10, 64)
+		tokenItems := strings.Split(string(token), "#")
+		timeStamp, err := strconv.ParseInt(tokenItems[1], 10, 64)
 		if err != nil {
 			panic(errors.Wrapf(err, "invalid next token value"))
 		}
 		params.ExclusiveStartKey = map[string]*dynamodb.AttributeValue{
-			pkName: MarshallDynamodbAttribute(pkValue),
-			skName: MarshallDynamodbAttribute(timeStamp),
+			"event_id": MarshallDynamodbAttribute(tokenItems[0]),
+			pkName:     MarshallDynamodbAttribute(pkValue),
+			skName:     MarshallDynamodbAttribute(timeStamp),
 		}
 	}
 
@@ -266,8 +269,10 @@ func (e eventStoreImpl) GetEventPage(ctx context.Context, index string, pkName s
 
 	var newNextToken *string
 	if output.LastEvaluatedKey != nil {
+		id := *output.LastEvaluatedKey["event_id"].S
 		timeStamp := *output.LastEvaluatedKey[skName].N
-		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(timeStamp)))
+		token := fmt.Sprintf("%s#%s", id, timeStamp)
+		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(token)))
 	}
 
 	if len(output.Items) == 0 {

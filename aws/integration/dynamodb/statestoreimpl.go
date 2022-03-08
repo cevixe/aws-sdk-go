@@ -10,11 +10,11 @@ import (
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
-	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/pkg/errors"
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -139,15 +139,16 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 		if err != nil {
 			panic(errors.Wrapf(err, "cannot decode next token"))
 		}
-		timeStamp, err := strconv.ParseInt(string(token), 10, 64)
+		tokenItems := strings.Split(string(token), "#")
+		timeStamp, err := strconv.ParseInt(tokenItems[1], 10, 64)
 		if err != nil {
 			panic(errors.Wrapf(err, "invalid next token value"))
 		}
 		params.ExclusiveStartKey = map[string]*dynamodb.AttributeValue{
+			"id":         MarshallDynamodbAttribute(tokenItems[0]),
 			"type":       MarshallDynamodbAttribute(typ),
 			"updated_at": MarshallDynamodbAttribute(timeStamp),
 		}
-		fmt.Printf("ExclusiveStartKey: %s\n", string(json.Marshall(params.ExclusiveStartKey)))
 	}
 
 	output, err := s.dynamodbClient.QueryWithContext(ctx, params)
@@ -157,9 +158,10 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 
 	var newNextToken *string
 	if output.LastEvaluatedKey != nil {
-		fmt.Printf("LastEvaluatedKey: %s\n", string(json.Marshall(output.LastEvaluatedKey)))
+		id := *output.LastEvaluatedKey["id"].S
 		timeStamp := *output.LastEvaluatedKey["updated_at"].N
-		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(timeStamp)))
+		token := fmt.Sprintf("%s#%s", id, timeStamp)
+		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(token)))
 	}
 
 	if len(output.Items) == 0 {
