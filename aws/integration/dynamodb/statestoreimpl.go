@@ -3,12 +3,14 @@ package dynamodb
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/cevixe/aws-sdk-go/aws/env"
 	"github.com/cevixe/aws-sdk-go/aws/factory"
 	"github.com/cevixe/aws-sdk-go/aws/model"
+	"github.com/cevixe/aws-sdk-go/aws/serdes/json"
 	"github.com/pkg/errors"
 	"math"
 	"os"
@@ -145,6 +147,7 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 			"type":       MarshallDynamodbAttribute(typ),
 			"updated_at": MarshallDynamodbAttribute(timeStamp),
 		}
+		fmt.Printf("ExclusiveStartKey: %s\n", string(json.Marshall(params.ExclusiveStartKey)))
 	}
 
 	output, err := s.dynamodbClient.QueryWithContext(ctx, params)
@@ -154,6 +157,7 @@ func (s stateStoreImpl) GetStates(ctx context.Context, typ string, after *time.T
 
 	var newNextToken *string
 	if output.LastEvaluatedKey != nil {
+		fmt.Printf("LastEvaluatedKey: %s\n", string(json.Marshall(output.LastEvaluatedKey)))
 		timeStamp := *output.LastEvaluatedKey["updated_at"].N
 		newNextToken = aws.String(base64.StdEncoding.EncodeToString([]byte(timeStamp)))
 	}
